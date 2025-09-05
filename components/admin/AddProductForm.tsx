@@ -99,23 +99,23 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onClose, onProductAdded
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto border-0 shadow-2xl">
-        <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
+      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-700 bg-gray-800 shadow-2xl">
+        <CardHeader className="bg-gradient-to-r from-gray-800 to-gray-900 text-white">
           <div className="flex justify-between items-center">
             <div>
               <CardTitle className="text-2xl font-bold">Add New Product</CardTitle>
-              <CardDescription className="text-blue-100">Add a new product to your store</CardDescription>
+              <CardDescription className="text-gray-300">Add a new product to your store</CardDescription>
             </div>
             <Button variant="ghost" size="sm" onClick={onClose} className="text-white hover:bg-white/20">
               <X className="h-4 w-4" />
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="bg-gray-800">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Product Name</Label>
+                <Label htmlFor="name" className="text-gray-300">Product Name</Label>
                 <Input
                   id="name"
                   name="name"
@@ -123,17 +123,18 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onClose, onProductAdded
                   value={formData.name}
                   onChange={handleChange}
                   required
+                  className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
+                <Label htmlFor="category" className="text-gray-300">Category</Label>
                 <Select value={formData.category} onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}>
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-gray-700 border-gray-600">
                     {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.slug}>
+                      <SelectItem key={category.id} value={category.slug} className="text-white hover:bg-gray-600">
                         {category.name}
                       </SelectItem>
                     ))}
@@ -143,7 +144,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onClose, onProductAdded
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description" className="text-gray-300">Description</Label>
               <Textarea
                 id="description"
                 name="description"
@@ -152,12 +153,13 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onClose, onProductAdded
                 onChange={handleChange}
                 rows={3}
                 required
+                className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="price">Price (₹)</Label>
+                <Label htmlFor="price" className="text-gray-300">Price (₹)</Label>
                 <Input
                   id="price"
                   name="price"
@@ -167,10 +169,11 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onClose, onProductAdded
                   value={formData.price}
                   onChange={handleChange}
                   required
+                  className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="originalPrice">Original Price (₹)</Label>
+                <Label htmlFor="originalPrice" className="text-gray-300">Original Price (₹)</Label>
                 <Input
                   id="originalPrice"
                   name="originalPrice"
@@ -179,10 +182,11 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onClose, onProductAdded
                   placeholder="0.00"
                   value={formData.originalPrice}
                   onChange={handleChange}
+                  className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="stock">Stock</Label>
+                <Label htmlFor="stock" className="text-gray-300">Stock</Label>
                 <Input
                   id="stock"
                   name="stock"
@@ -191,13 +195,14 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onClose, onProductAdded
                   value={formData.stock}
                   onChange={handleChange}
                   required
+                  className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="image">Image URL</Label>
+                <Label htmlFor="image" className="text-gray-300">Image URL</Label>
                 <Input
                   id="image"
                   name="image"
@@ -206,29 +211,30 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onClose, onProductAdded
                   value={formData.image}
                   onChange={handleChange}
                   required
+                  className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="unit">Unit</Label>
+                <Label htmlFor="unit" className="text-gray-300">Unit</Label>
                 <Select value={formData.unit} onValueChange={(value) => setFormData(prev => ({ ...prev, unit: value }))}>
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="kg">kg</SelectItem>
-                    <SelectItem value="g">g</SelectItem>
-                    <SelectItem value="lb">lb</SelectItem>
-                    <SelectItem value="piece">piece</SelectItem>
-                    <SelectItem value="pack">pack</SelectItem>
-                    <SelectItem value="bottle">bottle</SelectItem>
-                    <SelectItem value="box">box</SelectItem>
+                  <SelectContent className="bg-gray-700 border-gray-600">
+                    <SelectItem value="kg" className="text-white hover:bg-gray-600">kg</SelectItem>
+                    <SelectItem value="g" className="text-white hover:bg-gray-600">g</SelectItem>
+                    <SelectItem value="lb" className="text-white hover:bg-gray-600">lb</SelectItem>
+                    <SelectItem value="piece" className="text-white hover:bg-gray-600">piece</SelectItem>
+                    <SelectItem value="pack" className="text-white hover:bg-gray-600">pack</SelectItem>
+                    <SelectItem value="bottle" className="text-white hover:bg-gray-600">bottle</SelectItem>
+                    <SelectItem value="box" className="text-white hover:bg-gray-600">box</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
             {error && (
-              <div className="text-red-600 text-sm bg-red-50 p-3 rounded-md">
+              <div className="text-red-400 text-sm bg-red-900/20 border border-red-500 p-3 rounded-md">
                 {error}
               </div>
             )}

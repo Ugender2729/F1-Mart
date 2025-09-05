@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useProducts, useCategories } from '@/hooks/useSupabase';
 import { useAllOrders } from '@/hooks/useOrders';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
 import AddProductForm from './AddProductForm';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -53,9 +55,55 @@ const AdminDashboard = () => {
     router.push('/auth');
   };
 
+  // Helper function to safely get customer name
+  const getCustomerName = (order: any) => {
+    if (order.customer_name) {
+      return order.customer_name;
+    }
+    
+    if (order.customerInfo && order.customerInfo.firstName) {
+      const firstName = order.customerInfo.firstName || '';
+      const lastName = order.customerInfo.lastName || '';
+      return `${firstName} ${lastName}`.trim();
+    }
+    
+    if (order.delivery_address?.customer?.name) {
+      return order.delivery_address.customer.name;
+    }
+    
+    return order.customer_email || 'Guest User';
+  };
+
+  // Helper function to safely get customer phone
+  const getCustomerPhone = (order: any) => {
+    return order.customer_phone || 
+           (order.customerInfo && order.customerInfo.phone) || 
+           order.delivery_address?.customer?.phone || 
+           (order.users && order.users.phone);
+  };
+
+  // Helper function to safely get customer email
+  const getCustomerEmail = (order: any) => {
+    return order.customer_email || 
+           (order.customerInfo && order.customerInfo.email) || 
+           (order.users && order.users.email);
+  };
+
   const handleDeleteOrder = async (orderId: string) => {
     try {
-      // For guest orders stored in localStorage, remove from localStorage
+      // Delete from Supabase database
+      const { error } = await supabase
+        .from('orders')
+        .delete()
+        .eq('id', orderId);
+
+      if (error) {
+        console.error('Database delete error:', error);
+        toast.error('Failed to delete order from database');
+        return;
+      }
+
+      // Also remove from localStorage as backup
       if (typeof window !== 'undefined') {
         const ordersData = localStorage.getItem('orders');
         if (ordersData) {
@@ -65,15 +113,14 @@ const AdminDashboard = () => {
         }
       }
 
-      // For database orders, you would typically call an API to delete
-      // For now, we'll just refresh the orders list
+      // Refresh orders list
       await refetchOrders();
       setDeleteOrderId(null);
       
-      // Show success message (you can add toast notification here)
-      console.log('Order deleted successfully');
+      toast.success('Order deleted successfully');
     } catch (error) {
       console.error('Error deleting order:', error);
+      toast.error('Failed to delete order');
     }
   };
 
@@ -174,12 +221,12 @@ const AdminDashboard = () => {
 
           {/* Products Tab */}
           <TabsContent value="products" className="space-y-4">
-            <Card className="border-0 shadow-lg">
-              <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
+            <Card className="border border-gray-700 bg-gray-800 shadow-lg">
+              <CardHeader className="bg-gradient-to-r from-gray-800 to-gray-900">
                 <div className="flex justify-between items-center">
                   <div>
-                    <CardTitle className="text-2xl font-bold text-gray-800">Product Management</CardTitle>
-                    <CardDescription className="text-gray-600">
+                    <CardTitle className="text-2xl font-bold text-white">Product Management</CardTitle>
+                    <CardDescription className="text-gray-300">
                       Manage your store's product inventory
                     </CardDescription>
                   </div>
@@ -189,13 +236,13 @@ const AdminDashboard = () => {
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="bg-gray-800">
                 {productsLoading ? (
-                  <div className="text-center py-8">Loading products...</div>
+                  <div className="text-center py-8 text-gray-300">Loading products...</div>
                 ) : (
                   <div className="space-y-4">
                     {products.slice(0, 5).map((product) => (
-                      <div key={product.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-white to-gray-50 border border-gray-200 rounded-xl hover:shadow-md transition-all duration-300">
+                      <div key={product.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-700 to-gray-800 border border-gray-600 rounded-xl hover:shadow-md transition-all duration-300">
                         <div className="flex items-center space-x-4">
                           <img 
                             src={product.image} 
@@ -203,15 +250,15 @@ const AdminDashboard = () => {
                             className="w-16 h-16 object-cover rounded-xl shadow-md"
                           />
                           <div>
-                            <h3 className="font-semibold text-gray-800 text-lg">{product.name}</h3>
-                            <p className="text-sm text-gray-600">₹{product.price} • {product.stock} in stock</p>
+                            <h3 className="font-semibold text-white text-lg">{product.name}</h3>
+                            <p className="text-sm text-gray-300">₹{product.price} • {product.stock} in stock</p>
                           </div>
                         </div>
                         <div className="flex space-x-2">
-                          <Button size="sm" variant="outline" className="border-blue-200 text-blue-600 hover:bg-blue-50">
+                          <Button size="sm" variant="outline" className="border-blue-500 text-blue-400 hover:bg-blue-900/20">
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button size="sm" variant="outline" className="border-red-200 text-red-600 hover:bg-red-50">
+                          <Button size="sm" variant="outline" className="border-red-500 text-red-400 hover:bg-red-900/20">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -225,12 +272,12 @@ const AdminDashboard = () => {
 
           {/* Categories Tab */}
           <TabsContent value="categories" className="space-y-4">
-            <Card className="border-0 shadow-lg">
-              <CardHeader className="bg-gradient-to-r from-emerald-50 to-green-50">
+            <Card className="border border-gray-700 bg-gray-800 shadow-lg">
+              <CardHeader className="bg-gradient-to-r from-gray-800 to-gray-900">
                 <div className="flex justify-between items-center">
                   <div>
-                    <CardTitle className="text-2xl font-bold text-gray-800">Category Management</CardTitle>
-                    <CardDescription className="text-gray-600">
+                    <CardTitle className="text-2xl font-bold text-white">Category Management</CardTitle>
+                    <CardDescription className="text-gray-300">
                       Organize your products into categories
                     </CardDescription>
                   </div>
@@ -240,25 +287,25 @@ const AdminDashboard = () => {
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="bg-gray-800">
                 {categoriesLoading ? (
-                  <div className="text-center py-8">Loading categories...</div>
+                  <div className="text-center py-8 text-gray-300">Loading categories...</div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {categories.map((category) => (
-                      <div key={category.id} className="p-4 bg-gradient-to-br from-white to-gray-50 border border-gray-200 rounded-xl hover:shadow-lg transition-all duration-300 hover:scale-105">
+                      <div key={category.id} className="p-4 bg-gradient-to-br from-gray-700 to-gray-800 border border-gray-600 rounded-xl hover:shadow-lg transition-all duration-300 hover:scale-105">
                         <img 
                           src={category.image} 
                           alt={category.name}
                           className="w-full h-32 object-cover rounded-lg mb-4 shadow-md"
                         />
-                        <h3 className="font-semibold text-gray-800 text-lg mb-2">{category.name}</h3>
-                        <p className="text-sm text-gray-600 mb-4">{category.productCount} products</p>
+                        <h3 className="font-semibold text-white text-lg mb-2">{category.name}</h3>
+                        <p className="text-sm text-gray-300 mb-4">{category.productCount} products</p>
                         <div className="flex space-x-2">
-                          <Button size="sm" variant="outline" className="border-emerald-200 text-emerald-600 hover:bg-emerald-50">
+                          <Button size="sm" variant="outline" className="border-emerald-500 text-emerald-400 hover:bg-emerald-900/20">
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button size="sm" variant="outline" className="border-red-200 text-red-600 hover:bg-red-50">
+                          <Button size="sm" variant="outline" className="border-red-500 text-red-400 hover:bg-red-900/20">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -332,9 +379,7 @@ const AdminDashboard = () => {
                                     <span className="bg-orange-900 text-orange-300 px-2 py-1 rounded-full text-xs font-medium mr-2">
                                       Guest
                                     </span>
-                                    {order.customer_name || 
-                                     (order as any).customerInfo ? `${(order as any).customerInfo.firstName || ''} ${(order as any).customerInfo.lastName || ''}`.trim() : 
-                                     order.customer_email || 'Guest User'}
+                                    {getCustomerName(order)}
                                   </span>
                                 ) : (
                                   <span className="flex items-center">
@@ -349,9 +394,9 @@ const AdminDashboard = () => {
                                 )} • {new Date(order.created_at || (order as any).orderDate || new Date()).toLocaleDateString()}
                               </p>
                               <p className="text-xs text-gray-400 mt-1">
-                                {order.customer_phone || (order as any).customerInfo?.phone || order.delivery_address?.customer?.phone || (order.users as any)?.phone ? 
-                                  `📞 ${order.customer_phone || (order as any).customerInfo?.phone || order.delivery_address?.customer?.phone || (order.users as any)?.phone}` : 
-                                  'No phone provided'
+                                {getCustomerPhone(order) ? 
+                                  `📞 ${getCustomerPhone(order)}` : 
+                                  '⚠️ Phone required'
                                 }
                               </p>
                             </div>
@@ -394,37 +439,29 @@ const AdminDashboard = () => {
                                   </div>
                                   <div className="space-y-1">
                                     <p className="text-sm text-gray-400">
-                                      <span className="font-medium">Name:</span> {
-                                        order.customer_name || 
-                                        (order as any).customerInfo ? `${(order as any).customerInfo.firstName || ''} ${(order as any).customerInfo.lastName || ''}`.trim() : 
-                                        order.delivery_address?.customer?.name || 
-                                        'Not provided'
-                                      }
+                                      <span className="font-medium">Name:</span> {getCustomerName(order)}
                                     </p>
                                     <p className="text-sm text-gray-400">
                                       <span className="font-medium">Phone:</span> {
-                                        order.customer_phone || 
-                                        (order as any).customerInfo?.phone || 
-                                        order.delivery_address?.customer?.phone ? (
+                                        getCustomerPhone(order) ? (
                                         <a 
-                                          href={`tel:${order.customer_phone || (order as any).customerInfo?.phone || order.delivery_address?.customer?.phone}`}
-                                          className="text-blue-400 hover:text-blue-300 underline ml-1"
+                                          href={`tel:${getCustomerPhone(order)}`}
+                                          className="text-blue-400 hover:text-blue-300 underline ml-1 font-semibold"
                                         >
-                                          {order.customer_phone || (order as any).customerInfo?.phone || order.delivery_address?.customer?.phone}
+                                          {getCustomerPhone(order)}
                                         </a>
                                       ) : (
-                                        <span className="text-gray-500 ml-1">Not provided</span>
+                                        <span className="text-red-400 ml-1 font-semibold">⚠️ Required</span>
                                       )}
                                     </p>
                                     <p className="text-sm text-gray-400">
                                       <span className="font-medium">Email:</span> {
-                                        order.customer_email || 
-                                        (order as any).customerInfo?.email ? (
+                                        getCustomerEmail(order) ? (
                                         <a 
-                                          href={`mailto:${order.customer_email || (order as any).customerInfo?.email}`}
+                                          href={`mailto:${getCustomerEmail(order)}`}
                                           className="text-blue-400 hover:text-blue-300 underline ml-1"
                                         >
-                                          {order.customer_email || (order as any).customerInfo?.email}
+                                          {getCustomerEmail(order)}
                                         </a>
                                       ) : (
                                         <span className="text-gray-500 ml-1">Not provided</span>
@@ -513,28 +550,26 @@ const AdminDashboard = () => {
                             </div>
                             <div className="flex space-x-2">
                               {/* Quick Contact Actions */}
-                              {(order.customer_phone || (order as any).customerInfo?.phone || order.delivery_address?.customer?.phone || (order.users as any)?.phone) && (
+                              {getCustomerPhone(order) && (
                                 <Button
                                   size="sm"
                                   variant="outline"
                                   className="border-green-500 text-green-400 hover:bg-green-900/20"
                                   onClick={() => {
-                                    const phone = order.customer_phone || (order as any).customerInfo?.phone || order.delivery_address?.customer?.phone || (order.users as any)?.phone;
-                                    window.open(`tel:${phone}`, '_self');
+                                    window.open(`tel:${getCustomerPhone(order)}`, '_self');
                                   }}
                                 >
                                   <Phone className="h-3 w-3 mr-1" />
                                   Call
                                 </Button>
                               )}
-                              {(order.customer_email || (order as any).customerInfo?.email || order.users?.email) && (
+                              {getCustomerEmail(order) && (
                                 <Button
                                   size="sm"
                                   variant="outline"
                                   className="border-blue-500 text-blue-400 hover:bg-blue-900/20"
                                   onClick={() => {
-                                    const email = order.customer_email || (order as any).customerInfo?.email || order.users?.email;
-                                    window.open(`mailto:${email}`, '_self');
+                                    window.open(`mailto:${getCustomerEmail(order)}`, '_self');
                                   }}
                                 >
                                   <Mail className="h-3 w-3 mr-1" />
@@ -547,7 +582,7 @@ const AdminDashboard = () => {
                                 </span>
                               ) : (
                                 <>
-                                  {order.status === 'pending' && (
+                              {order.status === 'pending' && (
                                 <Button
                                   size="sm"
                                   onClick={() => updateOrderStatus(order.id, 'confirmed')}

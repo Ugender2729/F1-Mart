@@ -122,7 +122,8 @@ const CheckoutPage = () => {
       if (!customerInfo.email.trim()) newErrors.email = 'Email is required';
       else if (!/\S+@\S+\.\S+/.test(customerInfo.email)) newErrors.email = 'Email is invalid';
       if (!customerInfo.phone.trim()) newErrors.phone = 'Phone number is required';
-      else if (!/^\d{10}$/.test(customerInfo.phone.replace(/\D/g, ''))) newErrors.phone = 'Phone number must be 10 digits';
+      else if (!/^\d{10}$/.test(customerInfo.phone.replace(/\D/g, ''))) newErrors.phone = 'Phone number must be exactly 10 digits';
+      else if (customerInfo.phone.replace(/\D/g, '').length !== 10) newErrors.phone = 'Phone number must be exactly 10 digits';
     }
     
     if (step === 2) {
@@ -165,7 +166,7 @@ const CheckoutPage = () => {
         // Add individual customer fields for admin dashboard compatibility
         customer_name: `${customerInfo.firstName} ${customerInfo.lastName}`,
         customer_email: customerInfo.email,
-        customer_phone: customerInfo.phone,
+        customer_phone: customerInfo.phone.replace(/\D/g, ''), // Store only digits
         deliveryInfo,
         paymentMethod,
         items: cartState.items,
@@ -179,72 +180,77 @@ const CheckoutPage = () => {
         estimatedDelivery: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours from now
       };
       
-      // Save to localStorage FIRST for instant response
+      // Prepare order data for database
+      const orderData = user ? {
+        // Authenticated user order
+        user_id: user.id,
+        items: cartState.items,
+        subtotal: subtotal,
+        discount: discount,
+        delivery_fee: deliveryFee,
+        tax: tax,
+        total: total,
+        status: 'confirmed',
+        payment_method: paymentMethod,
+        delivery_address: {
+          ...deliveryInfo,
+          customer: customerInfo
+        }
+      } : {
+        // Guest user order
+        user_id: null,
+        customer_name: `${customerInfo.firstName} ${customerInfo.lastName}`,
+        customer_email: customerInfo.email,
+        customer_phone: customerInfo.phone.replace(/\D/g, ''), // Store only digits
+        items: cartState.items,
+        subtotal: subtotal,
+        discount: discount,
+        delivery_fee: deliveryFee,
+        tax: tax,
+        total: total,
+        status: 'confirmed',
+        payment_method: paymentMethod,
+        delivery_address: {
+          ...deliveryInfo,
+          customer: customerInfo
+        }
+      };
+      
+      // Save to database FIRST
+      const { data: savedOrder, error: saveError } = await createOrder(orderData);
+      
+      if (saveError) {
+        console.error('Database save failed:', saveError);
+        setOrderError('Failed to save order. Please try again.');
+        setIsProcessing(false);
+        return;
+      }
+      
+      // Update order ID with database ID if available
+      if (savedOrder && savedOrder.id) {
+        setOrderId(savedOrder.id);
+      }
+      
+      // Also save to localStorage as backup for immediate access
       const existingOrders = JSON.parse(localStorage.getItem('orders') || '[]');
-      existingOrders.push(order);
+      existingOrders.push({
+        ...order,
+        id: savedOrder?.id || newOrderId,
+        database_id: savedOrder?.id
+      });
       localStorage.setItem('orders', JSON.stringify(existingOrders));
       
-      // Clear cart and show success IMMEDIATELY
+      // Clear cart and show success
       clearCart();
       setOrderPlaced(true);
       
       // Show success toast
       toast.success('Order placed successfully!', {
-        description: `Order ID: ${newOrderId}`,
+        description: `Order ID: ${savedOrder?.id || newOrderId}`,
         duration: 3000
       });
       
-      console.log('Order placed successfully:', order);
-      
-      // Try to save to database in background (non-blocking)
-      setTimeout(async () => {
-        try {
-          const orderData = user ? {
-            // Authenticated user order
-            user_id: user.id,
-            items: cartState.items,
-            subtotal: subtotal,
-            discount: discount,
-            delivery_fee: deliveryFee,
-            tax: tax,
-            total: total,
-            status: 'pending',
-            payment_method: paymentMethod,
-            delivery_address: {
-              ...deliveryInfo,
-              customer: customerInfo
-            }
-          } : {
-            // Guest user order
-            user_id: null,
-            customer_name: `${customerInfo.firstName} ${customerInfo.lastName}`,
-            customer_email: customerInfo.email,
-            customer_phone: customerInfo.phone,
-            items: cartState.items,
-            subtotal: subtotal,
-            discount: discount,
-            delivery_fee: deliveryFee,
-            tax: tax,
-            total: total,
-            status: 'pending',
-            payment_method: paymentMethod,
-            delivery_address: {
-              ...deliveryInfo,
-              customer: customerInfo
-            }
-          };
-          
-          const { data, error } = await createOrder(orderData);
-          
-          if (error) {
-            console.warn('Background database save failed:', error);
-          } else {
-            console.log('Order saved to database successfully in background');
-          }
-        } catch (dbError) {
-          console.warn('Background database error:', dbError);
-        }
-      }, 100); // Small delay to ensure UI updates first
+      console.log('Order placed successfully:', savedOrder || order);
       
     } catch (error) {
       console.error('Error placing order:', error);

@@ -171,13 +171,15 @@ export function useAllOrders() {
         dbOrders = ordersWithUsers || [];
       }
 
-      // Also fetch localStorage orders for guest users
-      const localStorageOrders = getLocalStorageOrders();
-
-      // Combine orders
-      const allOrders = [...localStorageOrders, ...dbOrders];
+      // Use database orders as primary source
+      setOrders(dbOrders);
       
-      setOrders(allOrders);
+      // Optional: Keep localStorage as backup for any orders that might not have been migrated
+      const localStorageOrders = getLocalStorageOrders();
+      if (localStorageOrders.length > 0) {
+        console.log('Found localStorage orders as backup:', localStorageOrders.length);
+        // You can choose to migrate these to database or keep them separate
+      }
 
     } catch (err) {
       console.error('Error fetching all orders:', err);
