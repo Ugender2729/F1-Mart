@@ -6,6 +6,9 @@ import { useAllOrders } from '@/hooks/useOrders';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import AddProductForm from './AddProductForm';
+import AddCategoryForm from './AddCategoryForm';
+import EditProductForm from './EditProductForm';
+import EditCategoryForm from './EditCategoryForm';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -27,9 +30,12 @@ import { useRouter } from 'next/navigation';
 const AdminDashboard = () => {
   const [admin, setAdmin] = useState<any>(null);
   const [showAddProduct, setShowAddProduct] = useState(false);
+  const [showAddCategory, setShowAddCategory] = useState(false);
   const [deleteOrderId, setDeleteOrderId] = useState<string | null>(null);
+  const [editingProduct, setEditingProduct] = useState<any>(null);
+  const [editingCategory, setEditingCategory] = useState<any>(null);
   const { products, loading: productsLoading, refetch: refetchProducts } = useProducts();
-  const { categories, loading: categoriesLoading } = useCategories();
+  const { categories, loading: categoriesLoading, refetch: refetchCategories } = useCategories();
   const { orders, loading: ordersLoading, error: ordersError, updateOrderStatus, refetch: refetchOrders } = useAllOrders();
   const router = useRouter();
 
@@ -121,6 +127,70 @@ const AdminDashboard = () => {
     } catch (error) {
       console.error('Error deleting order:', error);
       toast.error('Failed to delete order');
+    }
+  };
+
+  const handleEditProduct = (product: any) => {
+    setEditingProduct(product);
+  };
+
+  const handleEditCategory = (category: any) => {
+    setEditingCategory(category);
+  };
+
+  const handleUpdateProduct = async (updatedProduct: any) => {
+    try {
+      const { error } = await supabase
+        .from('products')
+        .update({
+          name: updatedProduct.name,
+          description: updatedProduct.description,
+          price: parseFloat(updatedProduct.price),
+          original_price: updatedProduct.originalPrice ? parseFloat(updatedProduct.originalPrice) : null,
+          image: updatedProduct.image,
+          category: updatedProduct.category,
+          stock: parseInt(updatedProduct.stock),
+          unit: updatedProduct.unit
+        })
+        .eq('id', updatedProduct.id);
+
+      if (error) {
+        toast.error('Failed to update product');
+        return;
+      }
+
+      toast.success('Product updated successfully');
+      setEditingProduct(null);
+      refetchProducts();
+    } catch (error) {
+      console.error('Update product error:', error);
+      toast.error('Failed to update product');
+    }
+  };
+
+  const handleUpdateCategory = async (updatedCategory: any) => {
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .update({
+          name: updatedCategory.name,
+          description: updatedCategory.description,
+          image: updatedCategory.image,
+          slug: updatedCategory.slug
+        })
+        .eq('id', updatedCategory.id);
+
+      if (error) {
+        toast.error('Failed to update category');
+        return;
+      }
+
+      toast.success('Category updated successfully');
+      setEditingCategory(null);
+      refetchCategories();
+    } catch (error) {
+      console.error('Update category error:', error);
+      toast.error('Failed to update category');
     }
   };
 
@@ -255,7 +325,12 @@ const AdminDashboard = () => {
                           </div>
                         </div>
                         <div className="flex space-x-2">
-                          <Button size="sm" variant="outline" className="border-blue-500 text-blue-400 hover:bg-blue-900/20">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="border-blue-500 text-blue-400 hover:bg-blue-900/20"
+                            onClick={() => handleEditProduct(product)}
+                          >
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button size="sm" variant="outline" className="border-red-500 text-red-400 hover:bg-red-900/20">
@@ -281,7 +356,10 @@ const AdminDashboard = () => {
                       Organize your products into categories
                     </CardDescription>
                   </div>
-                  <Button className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-lg">
+                  <Button 
+                    onClick={() => setShowAddCategory(true)}
+                    className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-lg"
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Add Category
                   </Button>
@@ -302,7 +380,12 @@ const AdminDashboard = () => {
                         <h3 className="font-semibold text-white text-lg mb-2">{category.name}</h3>
                         <p className="text-sm text-gray-300 mb-4">{category.productCount} products</p>
                         <div className="flex space-x-2">
-                          <Button size="sm" variant="outline" className="border-emerald-500 text-emerald-400 hover:bg-emerald-900/20">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="border-emerald-500 text-emerald-400 hover:bg-emerald-900/20"
+                            onClick={() => handleEditCategory(category)}
+                          >
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button size="sm" variant="outline" className="border-red-500 text-red-400 hover:bg-red-900/20">
@@ -632,6 +715,35 @@ const AdminDashboard = () => {
             refetchProducts();
             setShowAddProduct(false);
           }}
+        />
+      )}
+
+      {/* Add Category Modal */}
+      {showAddCategory && (
+        <AddCategoryForm
+          onClose={() => setShowAddCategory(false)}
+          onCategoryAdded={() => {
+            refetchCategories();
+            setShowAddCategory(false);
+          }}
+        />
+      )}
+
+      {/* Edit Product Modal */}
+      {editingProduct && (
+        <EditProductForm
+          product={editingProduct}
+          onClose={() => setEditingProduct(null)}
+          onProductUpdated={handleUpdateProduct}
+        />
+      )}
+
+      {/* Edit Category Modal */}
+      {editingCategory && (
+        <EditCategoryForm
+          category={editingCategory}
+          onClose={() => setEditingCategory(null)}
+          onCategoryUpdated={handleUpdateCategory}
         />
       )}
 
