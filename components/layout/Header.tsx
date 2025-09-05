@@ -1,20 +1,39 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search, ShoppingCart, Heart, User, Menu, X, Home } from 'lucide-react';
+import { Search, ShoppingCart, Heart, User, Menu, X, Home, LogOut, UserCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
+import { useAuth } from '@/context/AuthContext';
+import { toast } from 'sonner';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { state: cartState } = useCart();
   const { wishlist } = useWishlist();
+  const { user, signOut } = useAuth();
   const router = useRouter();
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close user menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,6 +45,88 @@ const Header = () => {
 
   const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
+  };
+
+  const handleLogout = async () => {
+    try {
+      console.log('Starting logout process...');
+      
+      // Show immediate feedback
+      toast.success('Logging out...');
+      
+      const { error } = await signOut();
+      if (error) {
+        console.error('SignOut error:', error);
+        toast.error('Failed to logout: ' + error.message);
+        return;
+      }
+      
+      console.log('Logout successful');
+      // The signOut function will handle the redirect
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Failed to logout');
+    }
+  };
+
+  const getUserDisplayName = () => {
+    if (!user) return '';
+    
+    // Check if this is an admin mobile user
+    if (user.email?.endsWith('@admin.mobile')) {
+      return 'Admin';
+    }
+    
+    // Try to get name from user metadata first
+    const firstName = user.user_metadata?.first_name;
+    const lastName = user.user_metadata?.last_name;
+    
+    if (firstName && lastName) {
+      return `${firstName} ${lastName}`;
+    } else if (firstName) {
+      return firstName;
+    } else {
+      // Check if this is a mobile user
+      if (user.email?.endsWith('@mobile.user')) {
+        const mobileNumber = user.email.replace('@mobile.user', '');
+        return `User ${mobileNumber.slice(-4)}`; // Show last 4 digits
+      }
+      
+      // Fallback to email username with proper formatting
+      const emailUsername = user.email?.split('@')[0] || 'User';
+      
+      // Handle different email formats
+      if (emailUsername.includes('.')) {
+        // Format: firstname.lastname -> "Firstname Lastname"
+        const nameParts = emailUsername.split('.');
+        return nameParts.map(part => 
+          part.charAt(0).toUpperCase() + part.slice(1)
+        ).join(' ');
+      } else {
+        // Format: firstname -> "Firstname"
+        return emailUsername.charAt(0).toUpperCase() + emailUsername.slice(1);
+      }
+    }
+  };
+
+  const getUserDisplayInfo = () => {
+    if (!user) return { name: '', info: '' };
+    
+    const name = getUserDisplayName();
+    
+    // Check if this is an admin mobile user
+    if (user.email?.endsWith('@admin.mobile')) {
+      const mobileNumber = user.email.replace('@admin.mobile', '');
+      return { name: 'Admin', info: `+91 ${mobileNumber}` };
+    }
+    
+    // Check if this is a regular mobile user
+    if (user.email?.endsWith('@mobile.user')) {
+      const mobileNumber = user.email.replace('@mobile.user', '');
+      return { name, info: `+91 ${mobileNumber}` };
+    }
+    
+    return { name, info: user.email || '' };
   };
 
   return (
@@ -111,13 +212,60 @@ const Header = () => {
               </Button>
             </Link>
 
-            {/* Auth Link */}
-            <Link href="/auth">
-              <Button variant="ghost" size="sm" className="bg-white/20 hover:bg-white/30 text-white rounded-xl px-4 py-3 transition-all duration-300 shadow-md">
-                <User className="h-5 w-5 mr-2" />
-                <span className="font-medium">Sign In</span>
-              </Button>
-            </Link>
+            {/* Auth Section */}
+            {user ? (
+              <div className="relative" ref={userMenuRef}>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="bg-white/20 hover:bg-white/30 text-white rounded-xl px-4 py-3 transition-all duration-300 shadow-md"
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                >
+                  <UserCircle className="h-5 w-5 mr-2" />
+                  <span className="font-medium">{getUserDisplayName()}</span>
+                </Button>
+                
+                {/* User Dropdown Menu */}
+                {isUserMenuOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">
+                    <div className="px-4 py-2 border-b border-gray-100">
+                      <p className="text-sm font-medium text-gray-900">{getUserDisplayInfo().name}</p>
+                      <p className="text-xs text-gray-500">{getUserDisplayInfo().info}</p>
+                    </div>
+                    <Link 
+                      href="/profile" 
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      <User className="h-4 w-4 mr-2" />
+                      Profile
+                    </Link>
+                    <Link 
+                      href="/orders" 
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      <ShoppingCart className="h-4 w-4 mr-2" />
+                      Orders
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link href="/auth">
+                <Button variant="ghost" size="sm" className="bg-white/20 hover:bg-white/30 text-white rounded-xl px-4 py-3 transition-all duration-300 shadow-md">
+                  <User className="h-5 w-5 mr-2" />
+                  <span className="font-medium">Sign In</span>
+                </Button>
+              </Link>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -167,10 +315,38 @@ const Header = () => {
               <ShoppingCart className="h-5 w-5" />
               <span>Cart ({cartState.itemCount})</span>
             </Link>
-            <Link href="/auth" className="flex items-center space-x-2 text-white hover:text-white/80 transition-colors">
-              <User className="h-5 w-5" />
-              <span>Sign In</span>
-            </Link>
+            
+            {/* Mobile Auth Section */}
+            {user ? (
+              <>
+                <div className="border-t border-white/20 pt-4">
+                  <div className="px-2 py-2">
+                    <p className="text-sm font-medium text-white">{getUserDisplayInfo().name}</p>
+                    <p className="text-xs text-white/70">{getUserDisplayInfo().info}</p>
+                  </div>
+                  <Link href="/profile" className="flex items-center space-x-2 text-white hover:text-white/80 transition-colors">
+                    <User className="h-5 w-5" />
+                    <span>Profile</span>
+                  </Link>
+                  <Link href="/orders" className="flex items-center space-x-2 text-white hover:text-white/80 transition-colors">
+                    <ShoppingCart className="h-5 w-5" />
+                    <span>Orders</span>
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center space-x-2 text-red-300 hover:text-red-200 transition-colors"
+                  >
+                    <LogOut className="h-5 w-5" />
+                    <span>Logout</span>
+                  </button>
+                </div>
+              </>
+            ) : (
+              <Link href="/auth" className="flex items-center space-x-2 text-white hover:text-white/80 transition-colors">
+                <User className="h-5 w-5" />
+                <span>Sign In</span>
+              </Link>
+            )}
           </div>
         )}
       </div>

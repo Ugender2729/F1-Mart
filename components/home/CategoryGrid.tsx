@@ -23,8 +23,8 @@ const CategoryGrid = () => {
             </span>
           </div>
           <h2 className="text-5xl md:text-7xl font-black text-white mb-8 leading-tight">
-            Shop by
-            <span className="block bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
+            <span className="text-white">Shop by </span>
+            <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
               Category
             </span>
           </h2>
@@ -34,8 +34,8 @@ const CategoryGrid = () => {
           </p>
         </div>
 
-        {/* Premium category grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-16">
+        {/* Premium category grid - optimized for 18 cards (3 rows of 6) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-6 gap-6 mb-16 max-w-7xl mx-auto">
           {categories.map((category, index) => (
             <Link
               key={category.id}

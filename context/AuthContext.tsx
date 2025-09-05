@@ -66,38 +66,128 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signUp = async (email: string, password: string, userData?: any) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: userData,
-        emailRedirectTo: undefined // Disable email confirmation
-      }
-    })
-    
-    // If signup is successful, automatically sign in the user
-    if (data.user && !error) {
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+    try {
+      const { data, error } = await supabase.auth.signUp({
         email,
-        password
+        password,
+        options: {
+          data: userData,
+          emailRedirectTo: undefined, // Disable email confirmation
+          captchaToken: undefined
+        }
       })
-      return { error: signInError }
+      
+      // If there's an error about email confirmation, try to sign in anyway
+      if (error && error.message.includes('email not confirmed')) {
+        console.log('Email confirmation error detected, attempting direct sign in...')
+        
+        // Try to sign in directly
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        })
+        
+        if (signInData.user && !signInError) {
+          console.log('Direct sign in successful')
+          return { error: null }
+        }
+        
+        return { error: signInError }
+      }
+      
+      // If signup is successful, automatically sign in the user
+      if (data.user && !error) {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        })
+        return { error: signInError }
+      }
+      
+      return { error }
+    } catch (err) {
+      console.error('SignUp error:', err)
+      return { error: err as AuthError }
     }
-    
-    return { error }
   }
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    })
-    return { error }
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      })
+      
+      // If user doesn't exist, create them automatically for mobile authentication
+      if (error && (error.message.includes('Invalid login credentials') || 
+                   error.message.includes('Email logins are disabled'))) {
+        // Check if this is a mobile user (email ends with @mobile.user)
+        if (email.endsWith('@mobile.user')) {
+          const mobileNumber = email.replace('@mobile.user', '');
+          
+          // Create user with mobile number
+          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              data: {
+                first_name: `User${mobileNumber.slice(-4)}`, // Use last 4 digits as name
+                last_name: 'Mobile',
+                mobile_number: mobileNumber
+              },
+              emailRedirectTo: undefined,
+              captchaToken: undefined
+            }
+          })
+          
+          if (signUpData.user && !signUpError) {
+            // Auto sign in after creating account
+            const { error: signInError } = await supabase.auth.signInWithPassword({
+              email,
+              password
+            })
+            return { error: signInError }
+          }
+          
+          return { error: signUpError }
+        }
+      }
+      
+      return { error }
+    } catch (err) {
+      console.error('SignIn error:', err)
+      return { error: err as AuthError }
+    }
   }
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut()
-    return { error }
+    try {
+      // Clear local storage first for immediate UI update
+      localStorage.removeItem('admin');
+      localStorage.removeItem('cart');
+      localStorage.removeItem('wishlist');
+      
+      // Clear user state immediately
+      setUser(null);
+      setLoading(false);
+      
+      // Sign out from Supabase
+      const { error } = await supabase.auth.signOut()
+      if (error) {
+        console.error('Supabase signOut error:', error);
+        return { error }
+      }
+      
+      // Use router.push for faster navigation without full page reload
+      if (typeof window !== 'undefined') {
+        window.location.href = '/';
+      }
+      
+      return { error: null }
+    } catch (err) {
+      console.error('SignOut error:', err);
+      return { error: err as AuthError }
+    }
   }
 
   const updateProfile = async (updates: any) => {

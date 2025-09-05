@@ -119,5 +119,12 @@ export const categories: Category[] = [
     image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600',
     productCount: 6,
     slug: 'dry-fruits'
+  },
+  {
+    id: '18',
+    name: 'Beverages',
+    image: 'https://images.unsplash.com/photo-1544145945-f90425340c7e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600',
+    productCount: 8,
+    slug: 'beverages'
   }
 ];

@@ -1,12 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 
 export interface Order {
   id: string;
-  user_id: string;
+  user_id: string | null;
+  customer_name?: string;
+  customer_email?: string;
+  customer_phone?: string;
   items: any[];
   subtotal: number;
   discount: number;
@@ -16,8 +19,16 @@ export interface Order {
   status: string;
   payment_method: string;
   delivery_address: any;
+  deliveryInfo?: any; // For localStorage orders
+  orderDate?: string; // For localStorage orders
   created_at: string;
   updated_at: string;
+  users?: {
+    email: string;
+    first_name: string;
+    last_name: string;
+    phone?: string;
+  };
 }
 
 export function useOrders() {
@@ -40,7 +51,8 @@ export function useOrders() {
         .from('orders')
         .select('*')
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(5);
 
       if (error) throw error;
 
@@ -123,31 +135,89 @@ export function useAllOrders() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchAllOrders = async () => {
+  const fetchAllOrders = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const { data, error } = await supabase
+      let dbOrders: any[] = [];
+
+      // First try to fetch orders with user data
+      const { data: ordersWithUsers, error: userError } = await supabase
         .from('orders')
         .select(`
           *,
-          users!inner(email, first_name, last_name)
+          users(email, first_name, last_name)
         `)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(5);
 
-      if (error) throw error;
+      if (userError) {
+        console.warn('Error fetching orders with users:', userError);
+        // Fallback: fetch orders without user data
+        const { data: ordersOnly, error: ordersError } = await supabase
+          .from('orders')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(5);
 
-      setOrders(data || []);
+        if (ordersError) {
+          console.warn('Error fetching orders without users:', ordersError);
+          dbOrders = [];
+        } else {
+          dbOrders = ordersOnly || [];
+        }
+      } else {
+        dbOrders = ordersWithUsers || [];
+      }
+
+      // Also fetch localStorage orders for guest users
+      const localStorageOrders = getLocalStorageOrders();
+
+      // Combine orders
+      const allOrders = [...localStorageOrders, ...dbOrders];
+      
+      setOrders(allOrders);
+
     } catch (err) {
       console.error('Error fetching all orders:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch orders');
     } finally {
       setLoading(false);
     }
-  };
+  }, []); // Empty dependency array since we don't depend on any external values
 
-  const updateOrderStatus = async (orderId: string, status: string) => {
+  // Helper function to get orders from localStorage
+  const getLocalStorageOrders = useCallback(() => {
+    try {
+      // Check if we're in the browser environment
+      if (typeof window === 'undefined') return [];
+      
+      const ordersData = localStorage.getItem('orders');
+      if (!ordersData) return [];
+      
+      const orders = JSON.parse(ordersData);
+      if (!Array.isArray(orders)) return [];
+      
+      return orders.map(order => ({
+        ...order,
+        user_id: null, // Guest order
+        users: null,
+        is_guest: true,
+        created_at: order.orderDate || order.created_at,
+        delivery_address: order.deliveryInfo || order.delivery_address,
+        payment_method: order.paymentMethod || order.payment_method || 'cod',
+        status: order.status || 'confirmed',
+        total: order.total || 0,
+        items: order.items || []
+      })).sort((a, b) => new Date(b.orderDate || b.created_at).getTime() - new Date(a.orderDate || a.created_at).getTime());
+    } catch (error) {
+      console.error('Error reading localStorage orders:', error);
+      return [];
+    }
+  }, []);
+
+  const updateOrderStatus = useCallback(async (orderId: string, status: string) => {
     try {
       setError(null);
 
@@ -170,11 +240,11 @@ export function useAllOrders() {
       setError(errorMessage);
       return { data: null, error: errorMessage };
     }
-  };
+  }, [fetchAllOrders]);
 
   useEffect(() => {
     fetchAllOrders();
-  }, []);
+  }, [fetchAllOrders]); // Now depends on the memoized function
 
   return {
     orders,

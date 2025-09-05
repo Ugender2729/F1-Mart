@@ -1,11 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Minus, Plus, X } from 'lucide-react';
+import { Minus, Plus, X, Package, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CartItem as CartItemType } from '@/types';
 import { useCart } from '@/context/CartContext';
+import { useOrders } from '@/hooks/useOrders';
+import { useAuth } from '@/context/AuthContext';
 
 interface CartItemProps {
   item: CartItemType;
@@ -13,7 +15,35 @@ interface CartItemProps {
 
 const CartItem: React.FC<CartItemProps> = ({ item }) => {
   const { updateQuantity, removeItem } = useCart();
+  const { user } = useAuth();
+  const { orders } = useOrders();
   const { product, quantity } = item;
+  const [lastOrderedDate, setLastOrderedDate] = useState<string | null>(null);
+  const [orderCount, setOrderCount] = useState(0);
+
+  // Check if this product was previously ordered
+  useEffect(() => {
+    if (user && orders && orders.length > 0) {
+      let lastOrderDate: string | null = null;
+      let totalOrdered = 0;
+
+      orders.forEach(order => {
+        if (order.items && Array.isArray(order.items)) {
+          order.items.forEach(orderItem => {
+            if (orderItem.product && orderItem.product.id === product.id) {
+              totalOrdered += orderItem.quantity || 0;
+              if (!lastOrderDate || new Date(order.created_at) > new Date(lastOrderDate)) {
+                lastOrderDate = order.created_at;
+              }
+            }
+          });
+        }
+      });
+
+      setLastOrderedDate(lastOrderDate);
+      setOrderCount(totalOrdered);
+    }
+  }, [user, orders, product.id]);
 
   const handleQuantityChange = (newQuantity: number) => {
     if (newQuantity <= 0) {
@@ -45,6 +75,22 @@ const CartItem: React.FC<CartItemProps> = ({ item }) => {
         <p className="text-sm text-gray-600 dark:text-gray-300 font-medium mt-1">
           ₹{product.price} per {product.unit}
         </p>
+        
+        {/* Order History Info */}
+        {user && orderCount > 0 && (
+          <div className="flex items-center space-x-2 mt-2">
+            <div className="flex items-center space-x-1 text-xs text-emerald-600 dark:text-emerald-400">
+              <Package className="h-3 w-3" />
+              <span>Previously ordered {orderCount} times</span>
+            </div>
+            {lastOrderedDate && (
+              <div className="flex items-center space-x-1 text-xs text-gray-500 dark:text-gray-400">
+                <Clock className="h-3 w-3" />
+                <span>Last: {new Date(lastOrderedDate).toLocaleDateString()}</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="flex items-center space-x-3">

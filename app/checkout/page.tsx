@@ -13,6 +13,7 @@ import { Card } from '@/components/ui/card';
 import { useCart } from '@/context/CartContext';
 import { useOrders } from '@/hooks/useOrders';
 import { useAuth } from '@/context/AuthContext';
+import { toast } from 'sonner';
 
 const CheckoutPage = () => {
   const { state: cartState, clearCart } = useCart();
@@ -22,6 +23,8 @@ const CheckoutPage = () => {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderId, setOrderId] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [orderError, setOrderError] = useState('');
+  const [driverDetails, setDriverDetails] = useState<any>(null);
 
   // Debug logging
   console.log('CheckoutPage rendered');
@@ -85,6 +88,30 @@ const CheckoutPage = () => {
     return `FM${timestamp}${random}`.toUpperCase();
   };
 
+  // Generate mock driver details
+  const generateDriverDetails = () => {
+    const drivers = [
+      { name: 'Rajesh Kumar', phone: '+91 98765 43210', vehicle: 'Honda Activa', rating: 4.8, experience: '3 years' },
+      { name: 'Priya Sharma', phone: '+91 87654 32109', vehicle: 'Bajaj Pulsar', rating: 4.9, experience: '5 years' },
+      { name: 'Amit Singh', phone: '+91 76543 21098', vehicle: 'TVS Jupiter', rating: 4.7, experience: '2 years' },
+      { name: 'Sunita Patel', phone: '+91 65432 10987', vehicle: 'Hero Splendor', rating: 4.6, experience: '4 years' },
+      { name: 'Vikram Reddy', phone: '+91 54321 09876', vehicle: 'Yamaha FZ', rating: 4.9, experience: '6 years' }
+    ];
+    
+    const randomDriver = drivers[Math.floor(Math.random() * drivers.length)];
+    const estimatedTime = Math.floor(Math.random() * 30) + 20; // 20-50 minutes
+    
+    return {
+      ...randomDriver,
+      estimatedTime: estimatedTime,
+      estimatedArrival: new Date(Date.now() + estimatedTime * 60 * 1000).toLocaleTimeString('en-IN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      })
+    };
+  };
+
   // Form validation
   const validateStep = (step: number) => {
     const newErrors: {[key: string]: string} = {};
@@ -114,6 +141,7 @@ const CheckoutPage = () => {
     if (!validateStep(3)) return;
     
     setIsProcessing(true);
+    setOrderError(''); // Clear any previous errors
     
     try {
       // Calculate order totals
@@ -126,31 +154,11 @@ const CheckoutPage = () => {
       const newOrderId = generateOrderId();
       setOrderId(newOrderId);
       
-      // Prepare order data for database
-      const orderData = {
-        user_id: user?.id || null,
-        items: cartState.items,
-        subtotal: subtotal,
-        discount: discount,
-        delivery_fee: deliveryFee,
-        tax: tax,
-        total: total,
-        status: 'pending',
-        payment_method: paymentMethod,
-        delivery_address: {
-          ...deliveryInfo,
-          customer: customerInfo
-        }
-      };
+      // Generate driver details
+      const driver = generateDriverDetails();
+      setDriverDetails(driver);
       
-      // Save order to database
-      const { data, error } = await createOrder(orderData);
-      
-      if (error) {
-        throw new Error(error);
-      }
-      
-      // Also save to localStorage as backup
+      // Create order object for localStorage (always works)
       const order = {
         id: newOrderId,
         customerInfo,
@@ -167,20 +175,76 @@ const CheckoutPage = () => {
         estimatedDelivery: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours from now
       };
       
+      // Save to localStorage FIRST for instant response
       const existingOrders = JSON.parse(localStorage.getItem('orders') || '[]');
       existingOrders.push(order);
       localStorage.setItem('orders', JSON.stringify(existingOrders));
       
-      // Clear cart and show success
+      // Clear cart and show success IMMEDIATELY
       clearCart();
       setOrderPlaced(true);
       
+      // Show success toast
+      toast.success('Order placed successfully!', {
+        description: `Order ID: ${newOrderId}`,
+        duration: 3000
+      });
+      
       console.log('Order placed successfully:', order);
-      alert(`Order placed successfully! Order ID: ${newOrderId}`);
+      
+      // Try to save to database in background (non-blocking)
+      setTimeout(async () => {
+        try {
+          const orderData = user ? {
+            // Authenticated user order
+            user_id: user.id,
+            items: cartState.items,
+            subtotal: subtotal,
+            discount: discount,
+            delivery_fee: deliveryFee,
+            tax: tax,
+            total: total,
+            status: 'pending',
+            payment_method: paymentMethod,
+            delivery_address: {
+              ...deliveryInfo,
+              customer: customerInfo
+            }
+          } : {
+            // Guest user order
+            user_id: null,
+            customer_name: `${customerInfo.firstName} ${customerInfo.lastName}`,
+            customer_email: customerInfo.email,
+            customer_phone: customerInfo.phone,
+            items: cartState.items,
+            subtotal: subtotal,
+            discount: discount,
+            delivery_fee: deliveryFee,
+            tax: tax,
+            total: total,
+            status: 'pending',
+            payment_method: paymentMethod,
+            delivery_address: {
+              ...deliveryInfo,
+              customer: customerInfo
+            }
+          };
+          
+          const { data, error } = await createOrder(orderData);
+          
+          if (error) {
+            console.warn('Background database save failed:', error);
+          } else {
+            console.log('Order saved to database successfully in background');
+          }
+        } catch (dbError) {
+          console.warn('Background database error:', dbError);
+        }
+      }, 100); // Small delay to ensure UI updates first
       
     } catch (error) {
       console.error('Error placing order:', error);
-      alert('There was an error placing your order. Please try again.');
+      setOrderError('There was an error placing your order. Please try again.');
     } finally {
       setIsProcessing(false);
     }
@@ -208,26 +272,137 @@ const CheckoutPage = () => {
 
   if (orderPlaced) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-blue-900 flex items-center justify-center">
-        <div className="text-center space-y-8 max-w-2xl mx-auto px-4">
-          <div className="w-20 h-20 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto">
-            <svg className="w-10 h-10 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-slate-900 dark:to-emerald-900 flex items-center justify-center p-4">
+        <div className="text-center space-y-8 max-w-2xl mx-auto">
+          {/* Success Animation */}
+          <div className="w-24 h-24 bg-gradient-to-br from-emerald-500 to-green-600 rounded-full flex items-center justify-center mx-auto shadow-2xl animate-pulse">
+            <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path>
             </svg>
           </div>
           
-          <div>
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              Order Placed Successfully!
+          <div className="space-y-4">
+            <h2 className="text-4xl font-black text-gray-900 dark:text-white mb-2 bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
+              🎉 Order Placed Successfully!
             </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-400 mb-4">
-              Thank you for your order. We'll send you a confirmation email shortly.
+            <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
+              Thank you for your order! Your order has been confirmed and will be processed shortly.
             </p>
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Order ID</p>
-              <p className="text-2xl font-bold text-emerald-600">{orderId}</p>
+            
+            {/* Order ID Card */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-xl border-2 border-emerald-200 dark:border-emerald-800">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 font-medium">Your Order ID</p>
+              <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400 tracking-wider">{orderId}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Save this ID for order tracking</p>
             </div>
+            
+            {/* Guest User Notice */}
+            {!user && (
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+                <div className="flex items-center justify-center space-x-2 mb-2">
+                  <svg className="h-5 w-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                  <h4 className="font-semibold text-blue-900 dark:text-blue-100">Guest Checkout</h4>
+                </div>
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  You checked out as a guest. <Link href="/auth" className="underline font-medium">Sign up</Link> to track your order history and get faster checkout next time!
+                </p>
+              </div>
+            )}
           </div>
+
+          {/* Driver Details */}
+          {driverDetails && (
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 shadow-lg">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">Your Delivery Partner</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Assigned and ready for pickup</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Driver Name</p>
+                      <p className="font-semibold text-gray-900 dark:text-white">{driverDetails.name}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
+                      <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Contact</p>
+                      <p className="font-semibold text-gray-900 dark:text-white">{driverDetails.phone}</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center">
+                      <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Vehicle</p>
+                      <p className="font-semibold text-gray-900 dark:text-white">{driverDetails.vehicle}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-yellow-100 dark:bg-yellow-900 rounded-full flex items-center justify-center">
+                      <svg className="w-4 h-4 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Rating</p>
+                      <p className="font-semibold text-gray-900 dark:text-white">{driverDetails.rating}/5.0 ({driverDetails.experience})</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Estimated Delivery Time */}
+              <div className="mt-4 pt-4 border-t border-blue-200 dark:border-blue-700">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-orange-100 dark:bg-orange-900 rounded-full flex items-center justify-center">
+                      <svg className="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Estimated Delivery Time</p>
+                      <p className="font-bold text-lg text-gray-900 dark:text-white">{driverDetails.estimatedTime} minutes</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Expected Arrival</p>
+                    <p className="font-bold text-lg text-emerald-600 dark:text-emerald-400">{driverDetails.estimatedArrival}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg text-left">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Order Summary</h3>
@@ -299,6 +474,25 @@ const CheckoutPage = () => {
               Checkout
             </h1>
 
+            {/* Authentication Status */}
+            {!user && (
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                      <strong>Guest Checkout:</strong> You're checking out as a guest. 
+                      <Link href="/auth" className="underline ml-1">Sign in</Link> to save your order history and get faster checkout.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Step Indicator */}
             <div className="flex items-center space-x-4 mb-8">
               {[1, 2, 3].map((step) => (
@@ -320,6 +514,35 @@ const CheckoutPage = () => {
                 </div>
               ))}
             </div>
+
+            {/* Error Display */}
+            {orderError && (
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-red-700 dark:text-red-300">
+                      {orderError}
+                    </p>
+                  </div>
+                  <div className="ml-auto pl-3">
+                    <button
+                      onClick={() => setOrderError('')}
+                      className="text-red-400 hover:text-red-600"
+                      title="Close error message"
+                    >
+                      <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Customer Information */}
             {currentStep === 1 && (
@@ -572,7 +795,7 @@ const CheckoutPage = () => {
                     {isProcessing ? (
                       <div className="flex items-center space-x-2">
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        <span>Processing...</span>
+                        <span>Placing Order...</span>
                       </div>
                     ) : (
                       `Place Order (₹${total.toFixed(2)})`
@@ -660,5 +883,4 @@ const CheckoutPage = () => {
   );
 };
 
-export default CheckoutPage;
 export default CheckoutPage;

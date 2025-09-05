@@ -9,7 +9,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     detectSessionInUrl: false,
     // Disable email verification
-    flowType: 'implicit'
+    flowType: 'implicit',
+    // Additional options to disable email confirmation
+    emailRedirectTo: undefined,
+    confirmEmail: false
   }
 })
 
