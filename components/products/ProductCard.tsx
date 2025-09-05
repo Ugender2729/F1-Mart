@@ -1,0 +1,157 @@
+'use client';
+
+import React from 'react';
+import Link from 'next/link';
+import { Heart, Star, Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Product } from '@/types';
+import { useCart } from '@/context/CartContext';
+import { useWishlist } from '@/context/WishlistContext';
+
+interface ProductCardProps {
+  product: Product;
+}
+
+const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+  const { addItem, getItemQuantity } = useCart();
+  const { isInWishlist, toggleWishlist } = useWishlist();
+  const isWishlisted = isInWishlist(product.id);
+  const cartQuantity = getItemQuantity(product.id);
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    addItem(product);
+  };
+
+  const handleWishlistToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    toggleWishlist(product.id);
+  };
+
+  return (
+    <div className="group relative bg-white/10 backdrop-blur-xl rounded-3xl premium-shadow hover:premium-shadow-hover transition-all duration-700 overflow-hidden border border-white/20 transform hover:-translate-y-3 hover:scale-[1.02]">
+      <Link href={`/product/${product.id}`}>
+        <div className="relative overflow-hidden aspect-square">
+          <img
+            src={product.image}
+            alt={product.name}
+            className="premium-image w-full h-full object-cover"
+          />
+          
+          {/* Premium gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent group-hover:from-black/70 transition-all duration-700" />
+          
+          {/* Premium badges */}
+          <div className="absolute top-5 left-5 flex flex-col gap-3">
+            {product.onSale && (
+              <div className="glass px-4 py-2 rounded-full">
+                <span className="text-white text-sm font-bold bg-gradient-to-r from-red-500 to-pink-500 bg-clip-text text-transparent">
+                  SALE
+                </span>
+              </div>
+            )}
+            {product.featured && (
+              <div className="glass px-4 py-2 rounded-full">
+                <span className="text-white text-sm font-bold bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent">
+                  FEATURED
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Premium wishlist button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleWishlistToggle}
+            className={`absolute top-5 right-5 p-3 rounded-full transition-all duration-500 glass ${
+              isWishlisted 
+                ? 'bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-lg' 
+                : 'bg-white/20 text-white hover:bg-gradient-to-r hover:from-red-500 hover:to-pink-500 hover:text-white'
+            }`}
+          >
+            <Heart className={`h-5 w-5 ${isWishlisted ? 'fill-current' : ''}`} />
+          </Button>
+
+          {/* Stock status with premium styling */}
+          {product.stock <= 5 && product.stock > 0 && (
+            <div className="absolute bottom-5 left-5 glass px-4 py-2 rounded-full">
+              <span className="text-white text-sm font-bold bg-gradient-to-r from-orange-400 to-yellow-500 bg-clip-text text-transparent">
+                Only {product.stock} left
+              </span>
+            </div>
+          )}
+          {product.stock === 0 && (
+            <div className="absolute bottom-5 left-5 glass px-4 py-2 rounded-full">
+              <span className="text-white text-sm font-bold bg-gradient-to-r from-red-400 to-red-600 bg-clip-text text-transparent">
+                Out of stock
+              </span>
+            </div>
+          )}
+        </div>
+      </Link>
+
+      <div className="p-8">
+        <Link href={`/product/${product.id}`}>
+          <div className="mb-6">
+            <h3 className="font-black text-white group-hover:text-purple-300 transition-colors line-clamp-2 text-xl mb-3">
+              {product.name}
+            </h3>
+            <p className="text-gray-300 text-sm mb-4">
+              {product.brand} • {product.weight}
+            </p>
+          </div>
+
+          <div className="flex items-center mb-6">
+            <div className="flex items-center space-x-2">
+              <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+              <span className="text-white font-bold text-lg">
+                {product.rating}
+              </span>
+              <span className="text-gray-400 text-sm">
+                ({product.reviewCount} reviews)
+              </span>
+            </div>
+          </div>
+        </Link>
+
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <span className="text-2xl font-black text-white">
+              ₹{product.price}
+            </span>
+            {product.originalPrice && (
+              <span className="text-lg text-gray-400 line-through">
+                ₹{product.originalPrice}
+              </span>
+            )}
+          </div>
+
+          {product.stock > 0 ? (
+            <Button
+              onClick={handleAddToCart}
+              size="sm"
+              className="relative overflow-hidden px-6 py-3 rounded-2xl font-bold text-white bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
+            >
+              <span className="relative z-10 flex items-center">
+                <Plus className="h-5 w-5 mr-2" />
+                {cartQuantity > 0 ? `Add (${cartQuantity})` : 'Add to Cart'}
+              </span>
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-blue-500 opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
+            </Button>
+          ) : (
+            <Button disabled size="sm" className="px-6 py-3 rounded-2xl glass text-gray-400">
+              Out of Stock
+            </Button>
+          )}
+        </div>
+      </div>
+      
+      {/* Premium glow effect */}
+      <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700 rounded-3xl pointer-events-none"></div>
+    </div>
+  );
+};
+
+export default ProductCard;
