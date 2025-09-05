@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { CartItem, Product } from '@/types';
+import { useCart as useCartHook } from '@/hooks/useCart';
 
 interface CartState {
   items: CartItem[];

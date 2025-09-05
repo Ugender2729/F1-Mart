@@ -11,9 +11,13 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import { Card } from '@/components/ui/card';
 import { useCart } from '@/context/CartContext';
+import { useOrders } from '@/hooks/useOrders';
+import { useAuth } from '@/context/AuthContext';
 
 const CheckoutPage = () => {
   const { state: cartState, clearCart } = useCart();
+  const { createOrder } = useOrders();
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderId, setOrderId] = useState('');
@@ -112,21 +116,50 @@ const CheckoutPage = () => {
     setIsProcessing(true);
     
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Calculate order totals
+      const subtotal = cartState.total;
+      const deliveryFee = subtotal >= 500 ? 0 : 50;
+      const discount = subtotal >= 1000 ? 250 : subtotal >= 700 ? 150 : 0;
+      const tax = (subtotal - discount) * 0.18; // 18% GST
+      const total = subtotal - discount + deliveryFee + tax;
       
       const newOrderId = generateOrderId();
       setOrderId(newOrderId);
       
-      // Save order to localStorage (in real app, this would be sent to backend)
+      // Prepare order data for database
+      const orderData = {
+        user_id: user?.id || null,
+        items: cartState.items,
+        subtotal: subtotal,
+        discount: discount,
+        delivery_fee: deliveryFee,
+        tax: tax,
+        total: total,
+        status: 'pending',
+        payment_method: paymentMethod,
+        delivery_address: {
+          ...deliveryInfo,
+          customer: customerInfo
+        }
+      };
+      
+      // Save order to database
+      const { data, error } = await createOrder(orderData);
+      
+      if (error) {
+        throw new Error(error);
+      }
+      
+      // Also save to localStorage as backup
       const order = {
         id: newOrderId,
         customerInfo,
         deliveryInfo,
         paymentMethod,
         items: cartState.items,
-        subtotal: cartState.total,
+        subtotal: subtotal,
         deliveryFee,
+        discount,
         tax,
         total,
         status: 'confirmed',
@@ -134,7 +167,6 @@ const CheckoutPage = () => {
         estimatedDelivery: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours from now
       };
       
-      // Save to localStorage
       const existingOrders = JSON.parse(localStorage.getItem('orders') || '[]');
       existingOrders.push(order);
       localStorage.setItem('orders', JSON.stringify(existingOrders));
@@ -142,6 +174,9 @@ const CheckoutPage = () => {
       // Clear cart and show success
       clearCart();
       setOrderPlaced(true);
+      
+      console.log('Order placed successfully:', order);
+      alert(`Order placed successfully! Order ID: ${newOrderId}`);
       
     } catch (error) {
       console.error('Error placing order:', error);

@@ -3,24 +3,18 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search, ShoppingCart, Heart, User, Menu, X, Sun, Moon, Home } from 'lucide-react';
+import { Search, ShoppingCart, Heart, User, Menu, X, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
-import { useTheme } from '@/context/ThemeContext';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { state: cartState } = useCart();
   const { wishlist } = useWishlist();
-  const { theme, setTheme } = useTheme();
   const router = useRouter();
-
-  const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
-  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +29,7 @@ const Header = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 glass border-b border-white/10">
+    <header className="sticky top-0 z-50 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 shadow-lg border-b border-purple-500/20">
       <div className="container mx-auto px-6">
         <div className="flex items-center justify-between h-24">
           {/* Logo */}
@@ -61,18 +55,18 @@ const Header = () => {
           {/* Search Engine */}
           <div className="hidden md:flex flex-1 max-w-2xl mx-8">
             <form onSubmit={handleSearch} className="relative w-full">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-white/80" />
               <Input
                 type="text"
                 placeholder="Search for groceries, fruits, vegetables..."
                 value={searchQuery}
                 onChange={handleSearchInputChange}
-                className="pl-12 pr-4 py-3 w-full rounded-xl border-white/20 bg-white/10 backdrop-blur-xl text-white placeholder-gray-300 focus:bg-white/20 focus:border-emerald-400/50 transition-all duration-300"
+                className="pl-12 pr-4 py-3 w-full rounded-xl border-white/30 bg-white/20 backdrop-blur-xl text-white placeholder-white/80 focus:bg-white/30 focus:border-white/50 transition-all duration-300 shadow-lg"
               />
               <Button
                 type="submit"
                 size="sm"
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1 rounded-lg"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/30 hover:bg-white/40 text-white px-4 py-1 rounded-lg shadow-md"
               >
                 Search
               </Button>
@@ -86,28 +80,19 @@ const Header = () => {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="glass rounded-xl p-3 hover:bg-white/20 transition-all duration-300"
+                className="bg-white/20 hover:bg-white/30 text-white rounded-xl p-3 transition-all duration-300 shadow-md"
               >
-                <Home className="h-5 w-5 text-white" />
+                <Home className="h-5 w-5" />
               </Button>
             </Link>
 
-            {/* Theme Toggle */}
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={toggleTheme} 
-              className="glass rounded-xl p-3 hover:bg-white/20 transition-all duration-300"
-            >
-              {theme === 'dark' ? <Sun className="h-5 w-5 text-white" /> : <Moon className="h-5 w-5 text-white" />}
-            </Button>
             
             {/* Wishlist */}
             <Link href="/wishlist">
-              <Button variant="ghost" size="sm" className="relative glass rounded-xl p-3 hover:bg-white/20 transition-all duration-300">
-                <Heart className="h-5 w-5 text-white" />
+              <Button variant="ghost" size="sm" className="relative bg-white/20 hover:bg-white/30 text-white rounded-xl p-3 transition-all duration-300 shadow-md">
+                <Heart className="h-5 w-5" />
                 {wishlist.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                  <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold shadow-lg">
                     {wishlist.length}
                   </span>
                 )}
@@ -116,28 +101,30 @@ const Header = () => {
 
             {/* Cart */}
             <Link href="/cart">
-              <Button variant="ghost" size="sm" className="relative glass rounded-xl p-3 hover:bg-white/20 transition-all duration-300">
-                <ShoppingCart className="h-5 w-5 text-white" />
+              <Button variant="ghost" size="sm" className="relative bg-white/20 hover:bg-white/30 text-white rounded-xl p-3 transition-all duration-300 shadow-md">
+                <ShoppingCart className="h-5 w-5" />
                 {cartState.itemCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-emerald-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                  <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold shadow-lg">
                     {cartState.itemCount}
                   </span>
                 )}
               </Button>
             </Link>
 
-            {/* Account */}
-            <Button variant="ghost" size="sm" className="glass rounded-xl px-4 py-3 hover:bg-white/20 transition-all duration-300">
-              <User className="h-5 w-5 mr-2 text-white" />
-              <span className="font-medium text-white">Account</span>
-            </Button>
+            {/* Auth Link */}
+            <Link href="/auth">
+              <Button variant="ghost" size="sm" className="bg-white/20 hover:bg-white/30 text-white rounded-xl px-4 py-3 transition-all duration-300 shadow-md">
+                <User className="h-5 w-5 mr-2" />
+                <span className="font-medium">Sign In</span>
+              </Button>
+            </Link>
           </div>
 
           {/* Mobile Menu Button */}
           <Button
             variant="ghost"
             size="sm"
-            className="md:hidden"
+            className="md:hidden bg-white/20 hover:bg-white/30 text-white rounded-xl p-3 transition-all duration-300 shadow-md"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -147,18 +134,18 @@ const Header = () => {
         {/* Mobile Search */}
         <div className="md:hidden py-3">
           <form onSubmit={handleSearch} className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/80" />
             <Input
               type="text"
               placeholder="Search for groceries..."
               value={searchQuery}
               onChange={handleSearchInputChange}
-              className="pl-10 pr-16 w-full"
+              className="pl-10 pr-16 w-full bg-white/20 border-white/30 text-white placeholder-white/80 focus:bg-white/30 focus:border-white/50 rounded-xl shadow-lg"
             />
             <Button
               type="submit"
               size="sm"
-              className="absolute right-1 top-1/2 transform -translate-y-1/2 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 text-xs"
+              className="absolute right-1 top-1/2 transform -translate-y-1/2 bg-white/30 hover:bg-white/40 text-white px-3 py-1 text-xs rounded-lg shadow-md"
             >
               Search
             </Button>
@@ -167,27 +154,23 @@ const Header = () => {
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden border-t py-4 space-y-4">
-            <Link href="/" className="flex items-center space-x-2 text-gray-700 dark:text-gray-300">
+          <div className="md:hidden border-t border-white/20 py-4 space-y-4">
+            <Link href="/" className="flex items-center space-x-2 text-white hover:text-white/80 transition-colors">
               <Home className="h-5 w-5" />
               <span>Home</span>
             </Link>
-            <Link href="/wishlist" className="flex items-center space-x-2 text-gray-700 dark:text-gray-300">
+            <Link href="/wishlist" className="flex items-center space-x-2 text-white hover:text-white/80 transition-colors">
               <Heart className="h-5 w-5" />
               <span>Wishlist ({wishlist.length})</span>
             </Link>
-            <Link href="/cart" className="flex items-center space-x-2 text-gray-700 dark:text-gray-300">
+            <Link href="/cart" className="flex items-center space-x-2 text-white hover:text-white/80 transition-colors">
               <ShoppingCart className="h-5 w-5" />
               <span>Cart ({cartState.itemCount})</span>
             </Link>
-            <div className="flex items-center space-x-2 text-gray-700 dark:text-gray-300">
+            <Link href="/auth" className="flex items-center space-x-2 text-white hover:text-white/80 transition-colors">
               <User className="h-5 w-5" />
-              <span>Account</span>
-            </div>
-            <Button variant="ghost" size="sm" onClick={toggleTheme} className="justify-start p-0">
-              {theme === 'dark' ? <Sun className="h-4 w-4 mr-2" /> : <Moon className="h-4 w-4 mr-2" />}
-              <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
-            </Button>
+              <span>Sign In</span>
+            </Link>
           </div>
         )}
       </div>
