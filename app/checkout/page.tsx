@@ -162,6 +162,10 @@ const CheckoutPage = () => {
       const order = {
         id: newOrderId,
         customerInfo,
+        // Add individual customer fields for admin dashboard compatibility
+        customer_name: `${customerInfo.firstName} ${customerInfo.lastName}`,
+        customer_email: customerInfo.email,
+        customer_phone: customerInfo.phone,
         deliveryInfo,
         paymentMethod,
         items: cartState.items,

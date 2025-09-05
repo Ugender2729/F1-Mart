@@ -332,7 +332,9 @@ const AdminDashboard = () => {
                                     <span className="bg-orange-900 text-orange-300 px-2 py-1 rounded-full text-xs font-medium mr-2">
                                       Guest
                                     </span>
-                                    {order.customer_name || order.customer_email || 'Guest User'}
+                                    {order.customer_name || 
+                                     (order as any).customerInfo ? `${(order as any).customerInfo.firstName || ''} ${(order as any).customerInfo.lastName || ''}`.trim() : 
+                                     order.customer_email || 'Guest User'}
                                   </span>
                                 ) : (
                                   <span className="flex items-center">
@@ -347,8 +349,8 @@ const AdminDashboard = () => {
                                 )} • {new Date(order.created_at || (order as any).orderDate || new Date()).toLocaleDateString()}
                               </p>
                               <p className="text-xs text-gray-400 mt-1">
-                                {order.customer_phone || order.delivery_address?.customer?.phone || (order.users as any)?.phone ? 
-                                  `📞 ${order.customer_phone || order.delivery_address?.customer?.phone || (order.users as any)?.phone}` : 
+                                {order.customer_phone || (order as any).customerInfo?.phone || order.delivery_address?.customer?.phone || (order.users as any)?.phone ? 
+                                  `📞 ${order.customer_phone || (order as any).customerInfo?.phone || order.delivery_address?.customer?.phone || (order.users as any)?.phone}` : 
                                   'No phone provided'
                                 }
                               </p>
@@ -392,27 +394,37 @@ const AdminDashboard = () => {
                                   </div>
                                   <div className="space-y-1">
                                     <p className="text-sm text-gray-400">
-                                      <span className="font-medium">Name:</span> {order.customer_name || order.delivery_address?.customer?.name || 'Not provided'}
+                                      <span className="font-medium">Name:</span> {
+                                        order.customer_name || 
+                                        (order as any).customerInfo ? `${(order as any).customerInfo.firstName || ''} ${(order as any).customerInfo.lastName || ''}`.trim() : 
+                                        order.delivery_address?.customer?.name || 
+                                        'Not provided'
+                                      }
                                     </p>
                                     <p className="text-sm text-gray-400">
-                                      <span className="font-medium">Phone:</span> {order.customer_phone || order.delivery_address?.customer?.phone ? (
+                                      <span className="font-medium">Phone:</span> {
+                                        order.customer_phone || 
+                                        (order as any).customerInfo?.phone || 
+                                        order.delivery_address?.customer?.phone ? (
                                         <a 
-                                          href={`tel:${order.customer_phone || order.delivery_address?.customer?.phone}`}
+                                          href={`tel:${order.customer_phone || (order as any).customerInfo?.phone || order.delivery_address?.customer?.phone}`}
                                           className="text-blue-400 hover:text-blue-300 underline ml-1"
                                         >
-                                          {order.customer_phone || order.delivery_address?.customer?.phone}
+                                          {order.customer_phone || (order as any).customerInfo?.phone || order.delivery_address?.customer?.phone}
                                         </a>
                                       ) : (
                                         <span className="text-gray-500 ml-1">Not provided</span>
                                       )}
                                     </p>
                                     <p className="text-sm text-gray-400">
-                                      <span className="font-medium">Email:</span> {order.customer_email ? (
+                                      <span className="font-medium">Email:</span> {
+                                        order.customer_email || 
+                                        (order as any).customerInfo?.email ? (
                                         <a 
-                                          href={`mailto:${order.customer_email}`}
+                                          href={`mailto:${order.customer_email || (order as any).customerInfo?.email}`}
                                           className="text-blue-400 hover:text-blue-300 underline ml-1"
                                         >
-                                          {order.customer_email}
+                                          {order.customer_email || (order as any).customerInfo?.email}
                                         </a>
                                       ) : (
                                         <span className="text-gray-500 ml-1">Not provided</span>
@@ -501,13 +513,13 @@ const AdminDashboard = () => {
                             </div>
                             <div className="flex space-x-2">
                               {/* Quick Contact Actions */}
-                              {(order.customer_phone || order.delivery_address?.customer?.phone || (order.users as any)?.phone) && (
+                              {(order.customer_phone || (order as any).customerInfo?.phone || order.delivery_address?.customer?.phone || (order.users as any)?.phone) && (
                                 <Button
                                   size="sm"
                                   variant="outline"
                                   className="border-green-500 text-green-400 hover:bg-green-900/20"
                                   onClick={() => {
-                                    const phone = order.customer_phone || order.delivery_address?.customer?.phone || (order.users as any)?.phone;
+                                    const phone = order.customer_phone || (order as any).customerInfo?.phone || order.delivery_address?.customer?.phone || (order.users as any)?.phone;
                                     window.open(`tel:${phone}`, '_self');
                                   }}
                                 >
@@ -515,13 +527,13 @@ const AdminDashboard = () => {
                                   Call
                                 </Button>
                               )}
-                              {(order.customer_email || order.users?.email) && (
+                              {(order.customer_email || (order as any).customerInfo?.email || order.users?.email) && (
                                 <Button
                                   size="sm"
                                   variant="outline"
                                   className="border-blue-500 text-blue-400 hover:bg-blue-900/20"
                                   onClick={() => {
-                                    const email = order.customer_email || order.users?.email;
+                                    const email = order.customer_email || (order as any).customerInfo?.email || order.users?.email;
                                     window.open(`mailto:${email}`, '_self');
                                   }}
                                 >
