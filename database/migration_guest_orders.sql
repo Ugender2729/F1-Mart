@@ -106,3 +106,4 @@ COMMENT ON COLUMN orders.customer_phone IS 'Customer phone for guest orders';
 
 -- Final success message
 SELECT 'Guest order support migration completed successfully!' as status;
+

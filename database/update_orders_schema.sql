@@ -41,3 +41,5 @@ CREATE POLICY "Admins can view all orders" ON orders
 -- Create index for better performance on guest orders
 CREATE INDEX IF NOT EXISTS idx_orders_customer_email ON orders(customer_email);
 CREATE INDEX IF NOT EXISTS idx_orders_customer_phone ON orders(customer_phone);
+
+

@@ -19,9 +19,9 @@ const Footer = () => {
 
   const handleSocialClick = (platform: string) => {
     const urls = {
-      facebook: 'https://facebook.com/freshmarket',
-      twitter: 'https://twitter.com/freshmarket',
-      instagram: 'https://instagram.com/freshmarket'
+      facebook: 'https://facebook.com/f1mart',
+      twitter: 'https://twitter.com/f1mart',
+      instagram: 'https://instagram.com/f1mart'
     };
     window.open(urls[platform as keyof typeof urls], '_blank');
   };
@@ -32,10 +32,10 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Company Info */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">FreshMarket</h3>
+            <h3 className="text-lg font-semibold mb-4">F1 Mart</h3>
             <p className="text-gray-400 mb-4">
               Your trusted partner for fresh groceries delivered right to your doorstep.
-              Quality, convenience, and freshness guaranteed.
+              Fresh and fast delivery with quality and convenience guaranteed.
             </p>
             <div className="flex space-x-4">
               <Button 
@@ -99,7 +99,7 @@ const Footer = () => {
               </div>
               <div className="flex items-center space-x-2">
                 <Mail className="h-4 w-4" />
-                <span>help@freshmarket.com</span>
+                <span>help@f1mart.com</span>
               </div>
               <div className="flex items-center space-x-2">
                 <MapPin className="h-4 w-4" />
@@ -129,7 +129,7 @@ const Footer = () => {
         </div>
 
         <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400 text-sm">
-          <p>&copy; 2025 FreshMarket. All rights reserved. Made with ❤️ for fresh food lovers.</p>
+          <p>&copy; 2025 F1 Mart. All rights reserved. Made with ❤️ for fresh food lovers.</p>
         </div>
       </div>
     </footer>

@@ -12,13 +12,13 @@ import { Toaster } from '@/components/ui/sonner';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'FreshMarket - Fresh Groceries Delivered',
-  description: 'Get farm-fresh groceries delivered to your doorstep. Quality ingredients, competitive prices, fast delivery.',
-  keywords: 'grocery, fresh food, delivery, organic, vegetables, fruits, meat, dairy',
-  authors: [{ name: 'FreshMarket Team' }],
+  title: 'F1 Mart - Fresh and Fast Delivery',
+  description: 'Get farm-fresh groceries delivered to your doorstep. Quality ingredients, competitive prices, fresh and fast delivery.',
+  keywords: 'grocery, fresh food, delivery, organic, vegetables, fruits, meat, dairy, F1 Mart',
+  authors: [{ name: 'F1 Mart Team' }],
   openGraph: {
-    title: 'FreshMarket - Fresh Groceries Delivered',
-    description: 'Get farm-fresh groceries delivered to your doorstep',
+    title: 'F1 Mart - Fresh and Fast Delivery',
+    description: 'Get farm-fresh groceries delivered to your doorstep with fresh and fast delivery',
     type: 'website',
   },
 };

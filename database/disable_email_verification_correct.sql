@@ -20,3 +20,4 @@ SELECT table_name
 FROM information_schema.tables 
 WHERE table_schema = 'auth' 
 AND table_name LIKE '%config%';
+

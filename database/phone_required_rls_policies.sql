@@ -118,3 +118,5 @@ COMMENT ON COLUMN orders.customer_phone IS 'Customer phone number - exactly 10 d
 COMMENT ON COLUMN users.phone IS 'User phone number - exactly 10 digits, required for all users';
 COMMENT ON CONSTRAINT check_orders_phone_format ON orders IS 'Ensures customer phone is exactly 10 digits';
 COMMENT ON CONSTRAINT check_users_phone_format ON users IS 'Ensures user phone is exactly 10 digits';
+
+

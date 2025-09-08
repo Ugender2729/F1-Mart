@@ -169,3 +169,5 @@ const EditCategoryForm: React.FC<EditCategoryFormProps> = ({ category, onClose, 
 };
 
 export default EditCategoryForm;
+
+

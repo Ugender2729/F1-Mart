@@ -8,78 +8,79 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getProductById, products } from '@/data/products';
-import { useCart } from '@/context/CartContext';
+import { useCart } from '@/hooks/useCart';
 import { useWishlist } from '@/context/WishlistContext';
-import ProductCard from '@/components/products/ProductCard';
 
-interface ProductPageProps {
-  params: { id: string };
+interface ProductDetailsProps {
+  params: {
+    id: string;
+  };
 }
 
-const ProductPage: React.FC<ProductPageProps> = ({ params }) => {
-  const [selectedImage, setSelectedImage] = useState(0);
+const ProductDetails: React.FC<ProductDetailsProps> = ({ params }) => {
   const [quantity, setQuantity] = useState(1);
-  
+  const [selectedImage, setSelectedImage] = useState(0);
+  const { addToCart } = useCart();
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
+
   const product = getProductById(params.id);
-  const { addItem, getItemQuantity } = useCart();
-  const { isInWishlist, toggleWishlist } = useWishlist();
-  
+
   if (!product) {
     notFound();
   }
 
-  const isWishlisted = isInWishlist(product.id);
-  const cartQuantity = getItemQuantity(product.id);
-  
-  const relatedProducts = products
-    .filter(p => p.category === product.category && p.id !== product.id)
-    .slice(0, 4);
-
   const handleAddToCart = () => {
-    addItem(product, quantity);
-    setQuantity(1);
+    addToCart(product, quantity);
+  };
+
+  const handleWishlistToggle = () => {
+    if (isInWishlist(product.id)) {
+      removeFromWishlist(product.id);
+    } else {
+      addToWishlist(product.id);
+    }
+  };
+
+  const renderStars = (rating: number) => {
+    return Array.from({ length: 5 }, (_, i) => (
+      <Star
+        key={i}
+        className={`h-4 w-4 ${
+          i < rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
+        }`}
+      />
+    ));
   };
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
-      <div className="container mx-auto px-4 py-8">
-        {/* Breadcrumb */}
-        <nav className="text-sm text-gray-500 dark:text-gray-400 mb-8">
-          <span>Home</span>
-          <span className="mx-2">›</span>
-          <span>Products</span>
-          <span className="mx-2">›</span>
-          <span className="text-gray-900 dark:text-white">{product.name}</span>
-        </nav>
-
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Product Images */}
-          <div>
-            <div className="aspect-square overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800 mb-4">
+          <div className="space-y-4">
+            <div className="aspect-square overflow-hidden rounded-2xl bg-gray-100 dark:bg-gray-800">
               <img
                 src={product.images[selectedImage]}
                 alt={product.name}
-                className="w-full h-full object-cover"
+                className="h-full w-full object-cover object-center"
               />
             </div>
-            
-            {/* Thumbnail Navigation */}
             {product.images.length > 1 && (
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-4 gap-4">
                 {product.images.map((image, index) => (
                   <button
                     key={index}
                     onClick={() => setSelectedImage(index)}
-                    className={`aspect-square overflow-hidden rounded-md border-2 ${
-                      selectedImage === index 
-                        ? 'border-emerald-500' 
-                        : 'border-gray-200 dark:border-gray-700'
+                    className={`aspect-square overflow-hidden rounded-lg ${
+                      selectedImage === index
+                        ? 'ring-2 ring-emerald-500'
+                        : 'hover:ring-2 hover:ring-gray-300'
                     }`}
                   >
                     <img
                       src={image}
                       alt={`${product.name} ${index + 1}`}
-                      className="w-full h-full object-cover"
+                      className="h-full w-full object-cover object-center"
                     />
                   </button>
                 ))}
@@ -87,240 +88,187 @@ const ProductPage: React.FC<ProductPageProps> = ({ params }) => {
             )}
           </div>
 
-          {/* Product Information */}
-          <div>
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                  {product.name}
-                </h1>
-                <p className="text-lg text-gray-600 dark:text-gray-400">
-                  {product.brand} • {product.weight}
-                </p>
-              </div>
-              
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => toggleWishlist(product.id)}
-                className={`p-2 ${isWishlisted ? 'text-red-500' : 'text-gray-400'}`}
-              >
-                <Heart className={`h-6 w-6 ${isWishlisted ? 'fill-current' : ''}`} />
-              </Button>
-            </div>
-
-            {/* Rating and Reviews */}
-            <div className="flex items-center space-x-4 mb-6">
-              <div className="flex items-center space-x-1">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`h-5 w-5 ${
-                      i < Math.floor(product.rating)
-                        ? 'text-yellow-400 fill-current'
-                        : 'text-gray-300 dark:text-gray-600'
-                    }`}
-                  />
-                ))}
-                <span className="text-lg font-semibold text-gray-900 dark:text-white ml-2">
-                  {product.rating}
-                </span>
-              </div>
-              <span className="text-gray-500 dark:text-gray-400">
-                ({product.reviewCount} reviews)
-              </span>
-            </div>
-
-            {/* Price */}
-            <div className="flex items-center space-x-4 mb-6">
-              <span className="text-3xl font-bold text-gray-900 dark:text-white">
-                ₹{product.price}
-              </span>
-              {product.originalPrice && (
-                <span className="text-xl text-gray-500 line-through">
-                  ₹{product.originalPrice}
-                </span>
-              )}
-              {product.onSale && (
-                <Badge variant="destructive" className="bg-red-500">
-                  Save ₹{(product.originalPrice! - product.price).toFixed(2)}
+          {/* Product Details */}
+          <div className="space-y-6">
+            <div>
+              <div className="flex items-center space-x-2 mb-2">
+                <Badge variant="secondary" className="text-emerald-600 bg-emerald-50">
+                  {product.category}
                 </Badge>
-              )}
-            </div>
-
-            {/* Stock Status */}
-            <div className="mb-6">
-              {product.stock > 0 ? (
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <span className="text-green-600 dark:text-green-400 font-medium">
-                    In Stock ({product.stock} available)
+                {product.onSale && (
+                  <Badge variant="destructive">Sale</Badge>
+                )}
+              </div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+                {product.name}
+              </h1>
+              <div className="flex items-center space-x-4 mb-4">
+                <div className="flex items-center space-x-1">
+                  {renderStars(product.rating)}
+                  <span className="text-sm text-gray-600 dark:text-gray-400 ml-2">
+                    ({product.reviewCount} reviews)
                   </span>
                 </div>
-              ) : (
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                  <span className="text-red-600 dark:text-red-400 font-medium">
-                    Out of Stock
+              </div>
+              <div className="flex items-center space-x-4 mb-6">
+                <span className="text-3xl font-bold text-emerald-600">
+                  ₹{product.price}
+                </span>
+                {product.originalPrice && product.originalPrice > product.price && (
+                  <span className="text-xl text-gray-500 line-through">
+                    ₹{product.originalPrice}
                   </span>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
-            {/* Quantity and Add to Cart */}
-            <div className="space-y-6 mb-8">
-              <div>
-                <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
-                  Quantity
-                </label>
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="h-10 w-10 p-0"
-                    >
-                      <Minus className="h-4 w-4" />
-                    </Button>
-                    
-                    <span className="text-lg font-semibold text-gray-900 dark:text-white px-4">
-                      {quantity}
-                    </span>
-                    
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
-                      className="h-10 w-10 p-0"
-                      disabled={quantity >= product.stock}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    Total: ₹{(product.price * quantity).toFixed(2)}
-                  </div>
+            <div className="space-y-4">
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    disabled={quantity <= 1}
+                  >
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                  <span className="w-12 text-center font-medium">{quantity}</span>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setQuantity(quantity + 1)}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
                 </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleWishlistToggle}
+                  className={isInWishlist(product.id) ? 'text-red-500' : ''}
+                >
+                  <Heart className={`h-4 w-4 ${isInWishlist(product.id) ? 'fill-current' : ''}`} />
+                </Button>
               </div>
 
               <div className="flex space-x-4">
                 <Button
                   onClick={handleAddToCart}
-                  disabled={product.stock === 0}
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3"
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
                   size="lg"
                 >
-                  Add to Cart {cartQuantity > 0 && `(${cartQuantity} in cart)`}
+                  Add to Cart
                 </Button>
                 <Button
                   variant="outline"
+                  className="flex-1"
                   size="lg"
-                  className="px-6"
-                  disabled={product.stock === 0}
                 >
                   Buy Now
                 </Button>
               </div>
             </div>
 
-            {/* Delivery Info */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-              <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
-                <Truck className="h-5 w-5 text-emerald-600" />
-                <span>Free delivery over ₹2000</span>
-              </div>
-              <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
-                <Shield className="h-5 w-5 text-emerald-600" />
-                <span>Quality guaranteed</span>
-              </div>
-              <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
-                <RotateCcw className="h-5 w-5 text-emerald-600" />
-                <span>Easy returns</span>
+            <Separator />
+
+            <div className="space-y-4">
+              <div className="flex items-center space-x-6 text-sm text-gray-600 dark:text-gray-400">
+                <div className="flex items-center space-x-2">
+                  <Truck className="h-4 w-4" />
+                  <span>Free delivery</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Shield className="h-4 w-4" />
+                  <span>1 year warranty</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RotateCcw className="h-4 w-4" />
+                  <span>30-day returns</span>
+                </div>
               </div>
             </div>
 
-            <Separator />
-
-            {/* Product Details Tabs */}
-            <Tabs defaultValue="description" className="mt-8">
+            <Tabs defaultValue="description" className="w-full">
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="description">Description</TabsTrigger>
-                <TabsTrigger value="nutrition">Nutrition</TabsTrigger>
-                <TabsTrigger value="ingredients">Ingredients</TabsTrigger>
+                <TabsTrigger value="specifications">Specifications</TabsTrigger>
+                <TabsTrigger value="reviews">Reviews</TabsTrigger>
               </TabsList>
-              
               <TabsContent value="description" className="mt-6">
-                <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
                   {product.description}
                 </p>
               </TabsContent>
-              
-              <TabsContent value="nutrition" className="mt-6">
-                {product.nutritionalInfo ? (
+              <TabsContent value="specifications" className="mt-6">
+                <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Calories:</span>
-                        <span className="font-medium text-gray-900 dark:text-white">{product.nutritionalInfo.calories}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Protein:</span>
-                        <span className="font-medium text-gray-900 dark:text-white">{product.nutritionalInfo.protein}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Carbs:</span>
-                        <span className="font-medium text-gray-900 dark:text-white">{product.nutritionalInfo.carbs}</span>
-                      </div>
+                    <div>
+                      <span className="font-medium text-gray-900 dark:text-white">Brand</span>
+                      <p className="text-gray-600 dark:text-gray-400">{product.brand}</p>
                     </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Fat:</span>
-                        <span className="font-medium text-gray-900 dark:text-white">{product.nutritionalInfo.fat}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Fiber:</span>
-                        <span className="font-medium text-gray-900 dark:text-white">{product.nutritionalInfo.fiber}</span>
-                      </div>
+                    <div>
+                      <span className="font-medium text-gray-900 dark:text-white">Weight</span>
+                      <p className="text-gray-600 dark:text-gray-400">{product.weight}</p>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-900 dark:text-white">Unit</span>
+                      <p className="text-gray-600 dark:text-gray-400">{product.unit}</p>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-900 dark:text-white">Stock</span>
+                      <p className="text-gray-600 dark:text-gray-400">{product.stock} available</p>
                     </div>
                   </div>
-                ) : (
-                  <p className="text-gray-500 dark:text-gray-400">Nutritional information not available</p>
-                )}
+                  {product.nutrition && (
+                    <div>
+                      <h4 className="font-medium text-gray-900 dark:text-white mb-2">Nutritional Information</h4>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-gray-600 dark:text-gray-400">Calories:</span>
+                          <span className="ml-2 font-medium">{product.nutrition.calories}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600 dark:text-gray-400">Protein:</span>
+                          <span className="ml-2 font-medium">{product.nutrition.protein}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600 dark:text-gray-400">Fat:</span>
+                          <span className="ml-2 font-medium">{product.nutrition.fat}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600 dark:text-gray-400">Carbs:</span>
+                          <span className="ml-2 font-medium">{product.nutrition.carbs}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </TabsContent>
-              
-              <TabsContent value="ingredients" className="mt-6">
-                {product.ingredients ? (
-                  <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-gray-300">
-                    {product.ingredients.map((ingredient, index) => (
-                      <li key={index}>{ingredient}</li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-gray-500 dark:text-gray-400">Ingredient information not available</p>
-                )}
+              <TabsContent value="reviews" className="mt-6">
+                <div className="space-y-4">
+                  <div className="text-center">
+                    <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+                      {product.rating}
+                    </div>
+                    <div className="flex justify-center space-x-1 mb-2">
+                      {renderStars(product.rating)}
+                    </div>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      Based on {product.reviewCount} reviews
+                    </p>
+                  </div>
+                  <div className="text-center text-gray-500 dark:text-gray-400">
+                    No reviews yet. Be the first to review this product!
+                  </div>
+                </div>
               </TabsContent>
             </Tabs>
           </div>
         </div>
-
-        {/* Related Products */}
-        {relatedProducts.length > 0 && (
-          <section className="mt-16">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">
-              You might also like
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {relatedProducts.map((relatedProduct) => (
-                <ProductCard key={relatedProduct.id} product={relatedProduct} />
-              ))}
-            </div>
-          </section>
-        )}
       </div>
     </div>
   );
 };
 
-export default ProductPage;
+export default ProductDetails;

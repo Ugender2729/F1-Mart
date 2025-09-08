@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search, ShoppingCart, Heart, User, Menu, X, Home, LogOut, UserCircle } from 'lucide-react';
+import { Search, ShoppingCart, Heart, User, Menu, X, Home, LogOut, UserCircle, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCart } from '@/context/CartContext';
@@ -147,9 +147,9 @@ const Header = () => {
             </div>
             <div className="flex flex-col">
               <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-red-500 to-pink-500 group-hover:from-pink-400 group-hover:via-red-400 group-hover:to-orange-400 transition-all duration-300">
-                FreshMart
+                F1 Mart
               </span>
-              <span className="text-sm text-gray-300 font-medium tracking-wider">PREMIUM GROCERIES</span>
+              <span className="text-sm text-gray-300 font-medium tracking-wider">FRESH AND FAST DELIVERY</span>
             </div>
           </Link>
 
@@ -246,7 +246,15 @@ const Header = () => {
                       onClick={() => setIsUserMenuOpen(false)}
                     >
                       <ShoppingCart className="h-4 w-4 mr-2" />
-                      Orders
+                      My Orders
+                    </Link>
+                    <Link 
+                      href="/order-history" 
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      <Package className="h-4 w-4 mr-2" />
+                      Order History
                     </Link>
                     <button
                       onClick={handleLogout}
@@ -330,7 +338,11 @@ const Header = () => {
                   </Link>
                   <Link href="/orders" className="flex items-center space-x-2 text-white hover:text-white/80 transition-colors">
                     <ShoppingCart className="h-5 w-5" />
-                    <span>Orders</span>
+                    <span>My Orders</span>
+                  </Link>
+                  <Link href="/order-history" className="flex items-center space-x-2 text-white hover:text-white/80 transition-colors">
+                    <Package className="h-5 w-5" />
+                    <span>Order History</span>
                   </Link>
                   <button
                     onClick={handleLogout}

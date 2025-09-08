@@ -9,11 +9,11 @@ const AboutPage = () => {
         {/* Hero Section */}
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6">
-            About <span className="text-emerald-600">FreshMarket</span>
+            About <span className="text-emerald-600">F1 Mart</span>
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
             We're passionate about bringing you the freshest, highest-quality groceries 
-            delivered right to your doorstep. Our mission is to make healthy eating 
+            delivered right to your doorstep with fresh and fast delivery. Our mission is to make healthy eating 
             convenient and accessible for everyone.
           </p>
         </div>
