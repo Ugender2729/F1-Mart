@@ -102,12 +102,12 @@ const OrderDetailsClient: React.FC<OrderDetailsClientProps> = ({ orderId }) => {
           const normalizedOrder: Order = {
             ...foundOrder,
             is_localStorage: true,
-            customer_name: foundOrder.customer_name || (foundOrder.customerInfo ? `${foundOrder.customerInfo.firstName || ''} ${foundOrder.customerInfo.lastName || ''}`.trim() : ''),
-            customer_email: foundOrder.customer_email || foundOrder.customerInfo?.email || '',
-            customer_phone: foundOrder.customer_phone || foundOrder.customerInfo?.phone || '',
-            delivery_address: foundOrder.delivery_address || foundOrder.deliveryInfo,
-            payment_method: foundOrder.payment_method || foundOrder.paymentMethod || 'cod',
-            created_at: foundOrder.created_at || foundOrder.orderDate,
+            customer_name: foundOrder.customer_name || (foundOrder as any).customerInfo ? `${(foundOrder as any).customerInfo.firstName || ''} ${(foundOrder as any).customerInfo.lastName || ''}`.trim() : '',
+            customer_email: foundOrder.customer_email || (foundOrder as any).customerInfo?.email || '',
+            customer_phone: foundOrder.customer_phone || (foundOrder as any).customerInfo?.phone || '',
+            delivery_address: foundOrder.delivery_address || (foundOrder as any).deliveryInfo,
+            payment_method: foundOrder.payment_method || (foundOrder as any).paymentMethod || 'cod',
+            created_at: foundOrder.created_at || (foundOrder as any).orderDate,
             status: foundOrder.status || 'confirmed'
           };
           setOrder(normalizedOrder);
@@ -296,16 +296,16 @@ const OrderDetailsClient: React.FC<OrderDetailsClientProps> = ({ orderId }) => {
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Name</p>
                   <p className="font-semibold text-gray-900 dark:text-white">
-                    {order.customerInfo.firstName} {order.customerInfo.lastName}
+                    {order.customer_name || 'N/A'}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Email</p>
-                  <p className="font-semibold text-gray-900 dark:text-white">{order.customerInfo.email}</p>
+                  <p className="font-semibold text-gray-900 dark:text-white">{order.customer_email || 'N/A'}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Phone</p>
-                  <p className="font-semibold text-gray-900 dark:text-white">{order.customerInfo.phone}</p>
+                  <p className="font-semibold text-gray-900 dark:text-white">{order.customer_phone || 'N/A'}</p>
                 </div>
               </CardContent>
             </Card>
@@ -320,14 +320,19 @@ const OrderDetailsClient: React.FC<OrderDetailsClientProps> = ({ orderId }) => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  <p className="text-gray-900 dark:text-white">{order.deliveryInfo.address}</p>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    {order.deliveryInfo.city}, {order.deliveryInfo.state} {order.deliveryInfo.zipCode}
+                  <p className="text-gray-900 dark:text-white">
+                    {typeof order.delivery_address === 'string' ? order.delivery_address : 
+                     order.delivery_address?.address || 'N/A'}
                   </p>
-                  {order.deliveryInfo.instructions && (
+                  <p className="text-gray-600 dark:text-gray-400">
+                    {typeof order.delivery_address === 'object' && order.delivery_address ? 
+                     `${order.delivery_address.city || ''}, ${order.delivery_address.state || ''} ${order.delivery_address.zipCode || ''}`.trim() : 
+                     'N/A'}
+                  </p>
+                  {typeof order.delivery_address === 'object' && order.delivery_address?.instructions && (
                     <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                       <p className="text-sm text-gray-600 dark:text-gray-400">Special Instructions:</p>
-                      <p className="text-gray-900 dark:text-white">{order.deliveryInfo.instructions}</p>
+                      <p className="text-gray-900 dark:text-white">{order.delivery_address.instructions}</p>
                     </div>
                   )}
                 </div>
@@ -346,11 +351,11 @@ const OrderDetailsClient: React.FC<OrderDetailsClientProps> = ({ orderId }) => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">Payment Method</span>
-                  <span className="font-semibold">{order.paymentMethod}</span>
+                  <span className="font-semibold">{order.payment_method || 'Cash on Delivery'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">Order Date</span>
-                  <span className="font-semibold">{new Date(order.orderDate).toLocaleDateString()}</span>
+                  <span className="font-semibold">{new Date(order.created_at || new Date().toISOString()).toLocaleDateString()}</span>
                 </div>
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
                   <div className="flex justify-between text-lg font-bold">

@@ -57,7 +57,7 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ params }) => {
           </div>
 
           {/* Product Details */}
-          <ProductDetailsClient product={product} />
+          <ProductDetailsClient productId={product.id} />
         </div>
       </div>
     </div>

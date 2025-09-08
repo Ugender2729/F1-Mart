@@ -58,7 +58,7 @@ export function useOrderHistory() {
       if (email) {
         if (mobileNumber) {
           // If both mobile and email provided, use AND condition
-          query = query.and(`customer_email.eq.${email}`);
+          query = query.eq('customer_email', email);
         } else {
           // If only email provided
           query = query.eq('customer_email', email);
