@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Product } from '@/types';
 import ProductCard from './ProductCard';
 
@@ -7,7 +7,7 @@ interface ProductGridProps {
   loading?: boolean;
 }
 
-const ProductGrid: React.FC<ProductGridProps> = ({ products, loading = false }) => {
+const ProductGrid: React.FC<ProductGridProps> = memo(({ products, loading = false }) => {
   if (loading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -43,6 +43,8 @@ const ProductGrid: React.FC<ProductGridProps> = ({ products, loading = false }) 
       ))}
     </div>
   );
-};
+});
+
+ProductGrid.displayName = 'ProductGrid';
 
 export default ProductGrid;

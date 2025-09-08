@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { memo } from 'react';
 import Link from 'next/link';
 import { getFeaturedProducts } from '@/data/products';
 import ProductCard from '@/components/products/ProductCard';
 
-const FeaturedProducts = () => {
-  const featuredProducts = getFeaturedProducts().slice(0, 6); // Limit to 6 products
+const FeaturedProducts = memo(() => {
+  const featuredProducts = getFeaturedProducts().slice(0, 6);
 
   return (
     <section className="py-12">
@@ -43,6 +43,8 @@ const FeaturedProducts = () => {
       </div>
     </section>
   );
-};
+});
+
+FeaturedProducts.displayName = 'FeaturedProducts';
 
 export default FeaturedProducts;
