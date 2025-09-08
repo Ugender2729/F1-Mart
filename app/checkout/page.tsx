@@ -615,8 +615,20 @@ const CheckoutPage = () => {
                     <Label htmlFor="phone">Phone Number</Label>
                     <Input
                       id="phone"
+                      type="tel"
+                      inputMode="numeric"
+                      pattern="[6-9][0-9]{9}"
                       value={customerInfo.phone}
-                      onChange={(e) => setCustomerInfo({...customerInfo, phone: e.target.value})}
+                      onChange={(e) => {
+                        const digits = e.target.value.replace(/\D/g, '');
+                        // enforce first digit 6-9 and total length 10
+                        const next = digits.length === 0
+                          ? ''
+                          : /^[6-9]/.test(digits[0])
+                            ? digits.slice(0, 10)
+                            : '';
+                        setCustomerInfo({ ...customerInfo, phone: next });
+                      }}
                       placeholder="9876543210"
                       maxLength={10}
                       className={errors.phone ? 'border-red-500' : ''}
@@ -688,9 +700,16 @@ const CheckoutPage = () => {
                       <Label htmlFor="zipCode">ZIP Code</Label>
                       <Input
                         id="zipCode"
+                        type="tel"
+                        inputMode="numeric"
+                        pattern="\\d{6}"
                         value={deliveryInfo.zipCode}
-                        onChange={(e) => setDeliveryInfo({...deliveryInfo, zipCode: e.target.value})}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/\D/g, '').slice(0, 6);
+                          setDeliveryInfo({ ...deliveryInfo, zipCode: digits });
+                        }}
                         placeholder="400001"
+                        maxLength={6}
                         className={errors.zipCode ? 'border-red-500' : ''}
                       />
                       {errors.zipCode && <p className="text-red-500 text-sm mt-1">{errors.zipCode}</p>}

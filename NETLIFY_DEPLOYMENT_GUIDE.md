@@ -34,10 +34,14 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 6. Add environment variables in Site settings > Environment variables
 7. Click "Deploy site"
 
-### Option B: Manual Deploy
+### Option B: Deploy with Netlify CLI (Manual)
 1. Build your project locally: `npm run build`
-2. Go to Netlify dashboard
-3. Drag and drop the `.next` folder to deploy
+2. Install CLI (one-time): `npm i -g netlify-cli`
+3. Log in: `netlify login`
+4. Link to your site: `netlify link` (choose existing or create new)
+5. Deploy to production: `netlify deploy --build --prod`
+
+Note: Netlify Drop (drag-and-drop) is not suitable for Next.js apps because the platform needs to run the build.
 
 ## Step 3: Configure Environment Variables in Netlify
 
