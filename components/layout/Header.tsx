@@ -3,11 +3,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search, ShoppingCart, Heart, User, Menu, X, Home, LogOut, UserCircle, Package, Utensils, Gift } from 'lucide-react';
+import { Search, ShoppingCart, User, Menu, X, Home, LogOut, UserCircle, Package, Utensils, Gift } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCart } from '@/context/CartContext';
-import { useWishlist } from '@/context/WishlistContext';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 
@@ -16,7 +15,6 @@ const Header = () => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { state: cartState } = useCart();
-  const { wishlist } = useWishlist();
   const { user, signOut } = useAuth();
   const router = useRouter();
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -211,18 +209,6 @@ const Header = () => {
               </Button>
             </Link>
             
-            {/* Wishlist */}
-            <Link href="/wishlist">
-              <Button variant="ghost" size="sm" className="relative bg-white/20 hover:bg-white/30 text-white rounded-xl p-3 transition-all duration-300 shadow-md">
-                <Heart className="h-5 w-5" />
-                {wishlist.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold shadow-lg">
-                    {wishlist.length}
-                  </span>
-                )}
-              </Button>
-            </Link>
-
             {/* Cart */}
             <Link href="/cart">
               <Button variant="ghost" size="sm" className="relative bg-white/20 hover:bg-white/30 text-white rounded-xl p-3 transition-all duration-300 shadow-md">
@@ -311,23 +297,25 @@ const Header = () => {
         </div>
 
         {/* Mobile Search */}
-        <div className="md:hidden py-3">
+        <div className="md:hidden py-4 px-2">
           <form onSubmit={handleSearch} className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/80" />
-            <Input
-              type="text"
-              placeholder="Search for groceries..."
-              value={searchQuery}
-              onChange={handleSearchInputChange}
-              className="pl-10 pr-16 w-full bg-white/20 border-white/30 text-white placeholder-white/80 focus:bg-white/30 focus:border-white/50 rounded-xl shadow-lg"
-            />
-            <Button
-              type="submit"
-              size="sm"
-              className="absolute right-1 top-1/2 transform -translate-y-1/2 bg-white/30 hover:bg-white/40 text-white px-3 py-1 text-xs rounded-lg shadow-md"
-            >
-              Search
-            </Button>
+            <div className="relative flex items-center">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-white/80 z-10" />
+              <Input
+                type="text"
+                placeholder="Search groceries..."
+                value={searchQuery}
+                onChange={handleSearchInputChange}
+                className="pl-12 pr-24 py-3 w-full bg-white/20 backdrop-blur-sm border border-white/30 text-white placeholder-white/70 focus:bg-white/30 focus:border-white/50 rounded-full shadow-lg text-base"
+              />
+              <Button
+                type="submit"
+                size="sm"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white px-4 py-2 text-sm font-semibold rounded-full shadow-md transition-all duration-300"
+              >
+                Go
+              </Button>
+            </div>
           </form>
         </div>
 
@@ -345,10 +333,6 @@ const Header = () => {
             <Link href="/food-delivery" className="flex items-center space-x-2 text-white hover:text-white/80 transition-colors">
               <Utensils className="h-5 w-5" />
               <span>Food Delivery</span>
-            </Link>
-            <Link href="/wishlist" className="flex items-center space-x-2 text-white hover:text-white/80 transition-colors">
-              <Heart className="h-5 w-5" />
-              <span>Wishlist ({wishlist.length})</span>
             </Link>
             <Link href="/cart" className="flex items-center space-x-2 text-white hover:text-white/80 transition-colors">
               <ShoppingCart className="h-5 w-5" />
