@@ -82,6 +82,7 @@ const Footer = () => {
             <h3 className="text-lg font-semibold mb-4">Customer Service</h3>
             <ul className="space-y-2 text-gray-400">
               <li><Link href="/help" className="hover:text-white transition-colors">Help Center</Link></li>
+              <li><Link href="/feedback" className="hover:text-emerald-400 transition-colors font-semibold">💬 Help Us Improve</Link></li>
               <li><Link href="/returns" className="hover:text-white transition-colors">Returns & Refunds</Link></li>
               <li><Link href="/shipping" className="hover:text-white transition-colors">Shipping Info</Link></li>
               <li><Link href="/faq" className="hover:text-white transition-colors">FAQ</Link></li>

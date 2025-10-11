@@ -1,15 +1,52 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+// Debug environment variables
+if (typeof window === 'undefined') {
+  console.log('Environment variables check:')
+  console.log('NEXT_PUBLIC_SUPABASE_URL:', supabaseUrl ? 'Set' : 'Missing')
+  console.log('NEXT_PUBLIC_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'Set' : 'Missing')
+  
+  // Validate URL format
+  if (supabaseUrl) {
+    try {
+      new URL(supabaseUrl)
+      console.log('✅ Supabase URL is valid')
+    } catch (error) {
+      console.error('❌ Invalid Supabase URL format:', supabaseUrl)
+    }
+  }
+}
+
+if (!supabaseUrl) {
+  throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL environment variable')
+}
+
+if (!supabaseAnonKey) {
+  throw new Error('Missing NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable')
+}
+
+// Validate URL format before creating client
+try {
+  new URL(supabaseUrl)
+} catch (error) {
+  throw new Error(`Invalid Supabase URL format: ${supabaseUrl}`)
+}
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
-    // Disable email verification
-    flowType: 'implicit'
+    // Use default flow type for better compatibility
+    // flowType: 'implicit', // Removed - this was causing issues
+    // Better token handling with maximum refresh time
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+    storageKey: 'supabase.auth.token',
+    // Handle token refresh errors
+    debug: process.env.NODE_ENV === 'development'
   }
 })
 

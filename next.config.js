@@ -73,11 +73,19 @@ const nextConfig = {
     // Enable server components
     serverComponentsExternalPackages: ['@supabase/supabase-js'],
   },
-  // Enable static optimization
-  output: 'standalone',
   // Performance optimizations
   poweredByHeader: false,
   generateEtags: false,
+  
+  // Additional performance features
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
+  },
+  
+  // Enable static optimization only in production
+  ...(process.env.NODE_ENV === 'production' && {
+    output: 'standalone',
+  }),
 };
 
 module.exports = nextConfig;

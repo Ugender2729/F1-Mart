@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search, ShoppingCart, Heart, User, Menu, X, Home, LogOut, UserCircle, Package } from 'lucide-react';
+import { Search, ShoppingCart, Heart, User, Menu, X, Home, LogOut, UserCircle, Package, Utensils, Gift } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCart } from '@/context/CartContext';
@@ -187,6 +187,29 @@ const Header = () => {
               </Button>
             </Link>
 
+            {/* Combos Button */}
+            <Link href="/combos">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="bg-white/20 hover:bg-white/30 text-white rounded-xl p-3 transition-all duration-300 shadow-md"
+                title="Combo Deals"
+              >
+                <Gift className="h-5 w-5" />
+              </Button>
+            </Link>
+
+            {/* Food Delivery Button */}
+            <Link href="/food-delivery">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="bg-white/20 hover:bg-white/30 text-white rounded-xl p-3 transition-all duration-300 shadow-md"
+                title="Food Delivery"
+              >
+                <Utensils className="h-5 w-5" />
+              </Button>
+            </Link>
             
             {/* Wishlist */}
             <Link href="/wishlist">
@@ -314,6 +337,14 @@ const Header = () => {
             <Link href="/" className="flex items-center space-x-2 text-white hover:text-white/80 transition-colors">
               <Home className="h-5 w-5" />
               <span>Home</span>
+            </Link>
+            <Link href="/combos" className="flex items-center space-x-2 text-white hover:text-white/80 transition-colors">
+              <Gift className="h-5 w-5" />
+              <span>Combo Deals</span>
+            </Link>
+            <Link href="/food-delivery" className="flex items-center space-x-2 text-white hover:text-white/80 transition-colors">
+              <Utensils className="h-5 w-5" />
+              <span>Food Delivery</span>
             </Link>
             <Link href="/wishlist" className="flex items-center space-x-2 text-white hover:text-white/80 transition-colors">
               <Heart className="h-5 w-5" />

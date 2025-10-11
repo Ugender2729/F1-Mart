@@ -13,6 +13,10 @@ export interface Product {
   stock: number;
   unit: string;
   weight: string;
+  lowStockThreshold?: number;
+  stockStatus?: 'in_stock' | 'low_stock' | 'out_of_stock';
+  lastStockUpdate?: string;
+  stockWarningSent?: boolean;
   nutritionalInfo?: {
     calories: number;
     protein: string;

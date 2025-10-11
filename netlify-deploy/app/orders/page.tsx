@@ -137,7 +137,7 @@ const OrdersPage = () => {
                 Error Loading Orders
               </h3>
               <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
-              <Button onClick={fetchOrders} variant="outline">
+              <Button onClick={() => fetchOrders(true)} variant="outline">
                 Try Again
               </Button>
             </div>

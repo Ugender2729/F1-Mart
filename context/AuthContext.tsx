@@ -4,6 +4,9 @@ import React, { createContext, useContext, useEffect, useState } from 'react'
 import { User, Session, AuthError } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 
+// Feature flag: explicitly enable email-based auth only when set to 'true'
+const EMAIL_AUTH_ENABLED = process.env.NEXT_PUBLIC_ENABLE_EMAIL_AUTH === 'true'
+
 interface AuthContextType {
   user: User | null
   session: Session | null
@@ -66,14 +69,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signUp = async (email: string, password: string, userData?: any) => {
+    if (!EMAIL_AUTH_ENABLED) {
+      // Short-circuit when email/provider auth is disabled
+      return { error: { message: 'Email logins are disabled' } as AuthError }
+    }
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: userData,
-          emailRedirectTo: undefined, // Disable email confirmation
-          captchaToken: undefined
+          data: userData
+          // Removed emailRedirectTo and captchaToken - these were causing 400/422 errors
         }
       })
       
@@ -112,6 +118,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signIn = async (email: string, password: string) => {
+    if (!EMAIL_AUTH_ENABLED) {
+      // Short-circuit when email/provider auth is disabled
+      return { error: { message: 'Email logins are disabled' } as AuthError }
+    }
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,

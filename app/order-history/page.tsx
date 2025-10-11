@@ -220,34 +220,34 @@ const OrderHistoryPage = () => {
                             Customer Information
                           </h4>
                           <div className="space-y-2 text-sm">
-                            {order.customer_name && (
-                              <div>
-                                <span className="text-gray-600 dark:text-gray-400">Name:</span>
-                                <span className="text-gray-900 dark:text-white ml-2">
-                                  {order.customer_name}
-                                </span>
-                              </div>
-                            )}
-                            {order.customer_email && (
-                              <div>
-                                <span className="text-gray-600 dark:text-gray-400">Email:</span>
-                                <span className="text-gray-900 dark:text-white ml-2">
-                                  {order.customer_email}
-                                </span>
-                              </div>
-                            )}
-                            {order.customer_phone && (
-                              <div>
-                                <span className="text-gray-600 dark:text-gray-400">Phone:</span>
-                                <span className="text-gray-900 dark:text-white ml-2">
-                                  {order.customer_phone}
-                                </span>
-                              </div>
-                            )}
+                            <div>
+                              <span className="text-gray-600 dark:text-gray-400">Name:</span>
+                              <span className="text-gray-900 dark:text-white ml-2">
+                                {order.customer_name || 'N/A'}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-gray-600 dark:text-gray-400">Email:</span>
+                              <span className="text-gray-900 dark:text-white ml-2">
+                                {order.customer_email || 'N/A'}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-gray-600 dark:text-gray-400">Phone:</span>
+                              <span className="text-gray-900 dark:text-white ml-2">
+                                {order.customer_phone || 'N/A'}
+                              </span>
+                            </div>
                             <div>
                               <span className="text-gray-600 dark:text-gray-400">Payment:</span>
                               <span className="text-gray-900 dark:text-white ml-2">
                                 {order.payment_method?.toUpperCase() || 'N/A'}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-gray-600 dark:text-gray-400">Order Type:</span>
+                              <span className="text-gray-900 dark:text-white ml-2">
+                                {order.user_id ? 'Registered User' : 'Guest User'}
                               </span>
                             </div>
                           </div>

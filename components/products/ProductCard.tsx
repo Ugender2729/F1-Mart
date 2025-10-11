@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { Heart, Star, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { StockWarning } from '@/components/ui/stock-warning';
 import { Product } from '@/types';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
@@ -81,21 +82,14 @@ const ProductCard: React.FC<ProductCardProps> = memo(({ product }) => {
             <Heart className={`h-5 w-5 ${isWishlisted ? 'fill-current' : ''}`} />
           </Button>
 
-          {/* Stock status with premium styling */}
-          {product.stock <= 5 && product.stock > 0 && (
-            <div className="absolute bottom-5 left-5 glass px-4 py-2 rounded-full">
-              <span className="text-white text-sm font-bold bg-gradient-to-r from-orange-400 to-yellow-500 bg-clip-text text-transparent">
-                Only {product.stock} left
-              </span>
-            </div>
-          )}
-          {product.stock === 0 && (
-            <div className="absolute bottom-5 left-5 glass px-4 py-2 rounded-full">
-              <span className="text-white text-sm font-bold bg-gradient-to-r from-red-400 to-red-600 bg-clip-text text-transparent">
-                Out of stock
-              </span>
-            </div>
-          )}
+          {/* Stock warning with premium styling */}
+          <div className="absolute bottom-5 left-5">
+            <StockWarning 
+              product={product} 
+              size="sm"
+              className="glass border-white/20 text-white"
+            />
+          </div>
         </div>
       </Link>
 

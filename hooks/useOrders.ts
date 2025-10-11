@@ -36,14 +36,26 @@ export function useOrders() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
+  const [lastFetch, setLastFetch] = useState<number>(0);
+  
+  // Cache for 5 minutes
+  const CACHE_DURATION = 5 * 60 * 1000;
 
-  const fetchOrders = async () => {
+  const fetchOrders = async (forceRefresh = false) => {
     try {
+      // Check cache first
+      const now = Date.now();
+      if (!forceRefresh && now - lastFetch < CACHE_DURATION && orders.length > 0) {
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       setError(null);
 
       if (!user) {
         setOrders([]);
+        setLoading(false);
         return;
       }
 
@@ -57,6 +69,7 @@ export function useOrders() {
       if (error) throw error;
 
       setOrders(data || []);
+      setLastFetch(now);
     } catch (err) {
       console.error('Error fetching orders:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch orders');

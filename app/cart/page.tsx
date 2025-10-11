@@ -40,24 +40,27 @@ const CartPage = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="flex items-center space-x-4 mb-8">
-          <Link href="/products">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Continue Shopping
-            </Button>
-          </Link>
-        </div>
-
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Shopping Cart ({cartState.itemCount} items)
-          </h1>
-          <Link href="/checkout">
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white">
-              Proceed to Checkout (Link)
-            </Button>
-          </Link>
+        <div className="flex flex-col space-y-4 mb-8 md:flex-row md:items-center md:justify-between md:space-y-0">
+          <div className="flex items-center space-x-4">
+            <Link href="/products">
+              <Button variant="ghost" size="sm">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Continue Shopping
+              </Button>
+            </Link>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
+              Shopping Cart ({cartState.itemCount} items)
+            </h1>
+          </div>
+          
+          {/* Quick Checkout Button */}
+          <Button 
+            onClick={() => router.push('/checkout')}
+            className="w-full md:w-auto bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-semibold px-6 py-3 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+          >
+            <ShoppingCart className="h-5 w-5 mr-2" />
+            Checkout Now
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -82,12 +85,6 @@ const CartPage = () => {
             <div className="sticky top-24">
               <CartSummary
                 subtotal={cartState.total}
-                onCheckout={() => {
-                  console.log('Checkout button clicked, navigating to checkout...');
-                  console.log('Cart state:', cartState);
-                  alert('Navigating to checkout...');
-                  router.push('/checkout');
-                }}
               />
             </div>
           </div>

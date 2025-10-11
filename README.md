@@ -10,6 +10,8 @@ A modern, full-stack grocery delivery application built with Next.js, Supabase, 
 - **Shopping Cart**: Add/remove items with real-time updates
 - **Wishlist**: Save favorite products for later
 - **Categories**: Organized product categories for easy browsing
+- **Combo Deals**: 15+ curated product bundles with 20% discount 🎁
+- **WhatsApp Ordering**: One-click WhatsApp chat for quick orders 💬
 
 ### 📱 **User Authentication**
 - **Mobile-based Login**: Sign in with mobile number + last 6 digits
@@ -22,6 +24,8 @@ A modern, full-stack grocery delivery application built with Next.js, Supabase, 
 - **Order Details**: Complete order information and tracking
 - **Status Updates**: Real-time order status (pending, confirmed, shipped, delivered)
 - **Guest Order Lookup**: Find orders using mobile number or email
+- **Order Verification**: 1-minute verification window after delivery to prevent fraud 🔐
+- **Feedback System**: Help us improve with structured feedback collection 💬
 
 ### 🎨 **Modern UI/UX**
 - **Responsive Design**: Works perfectly on mobile, tablet, and desktop
@@ -86,7 +90,12 @@ A modern, full-stack grocery delivery application built with Next.js, Supabase, 
    npm run dev
    ```
 
-6. **Open your browser**
+6. **Configure WhatsApp (Optional)**
+   - Open `components/WhatsAppButton.tsx`
+   - Update the phone number with your WhatsApp number
+   - See `WHATSAPP_CONFIGURATION.md` for detailed instructions
+
+7. **Open your browser**
    Navigate to [http://localhost:3000](http://localhost:3000)
 
 ## 📁 **Project Structure**
@@ -199,6 +208,11 @@ For support, email help@f1mart.com or create an issue in the GitHub repository.
 
 ## 🎯 **Roadmap**
 
+- [x] WhatsApp integration for quick orders ✅
+- [x] Combo deals with 20% discount ✅
+- [x] Order verification system (1-minute window) ✅
+- [x] Customer feedback collection system ✅
+- [ ] Custom combo builder
 - [ ] Mobile app (React Native)
 - [ ] Payment gateway integration
 - [ ] Real-time notifications
@@ -206,6 +220,7 @@ For support, email help@f1mart.com or create an issue in the GitHub repository.
 - [ ] Multi-language support
 - [ ] Inventory management
 - [ ] Delivery tracking
+- [ ] WhatsApp Business API for automated responses
 
 ---
 

@@ -3,18 +3,19 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useOrders, Order } from '@/hooks/useOrders';
 import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Package, Clock, CheckCircle, Truck } from 'lucide-react';
+import { Package, Clock, CheckCircle, Truck, ShoppingCart } from 'lucide-react';
 
 interface CartSummaryProps {
   subtotal: number;
-  onCheckout?: () => void;
 }
 
-const CartSummary: React.FC<CartSummaryProps> = ({ subtotal, onCheckout }) => {
+const CartSummary: React.FC<CartSummaryProps> = ({ subtotal }) => {
   const { user } = useAuth();
   const { orders, loading: ordersLoading, fetchOrders } = useOrders();
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
+  const router = useRouter();
 
   // Fetch recent orders when component mounts
   useEffect(() => {
@@ -74,10 +75,18 @@ const CartSummary: React.FC<CartSummaryProps> = ({ subtotal, onCheckout }) => {
   };
 
   const discountInfo = getDiscountInfo(subtotal);
-  const deliveryFee = subtotal >= 500 ? 0 : 415;
+  const deliveryFee = subtotal >= 500 ? 0 : 50; // Fixed delivery fee
   const couponDiscount = discountInfo?.type === 'coupon' ? discountInfo.amount : 0;
-  const tax = (subtotal - couponDiscount) * 0.08; // 8% tax on discounted amount
+  const tax = (subtotal - couponDiscount) * 0.18; // 18% GST on discounted amount
   const total = subtotal - couponDiscount + deliveryFee + tax;
+
+  // Handle checkout navigation
+  const handleCheckout = () => {
+    if (subtotal === 0) {
+      return; // Don't allow checkout with empty cart
+    }
+    router.push('/checkout');
+  };
 
   return (
     <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 space-y-4">
@@ -125,22 +134,15 @@ const CartSummary: React.FC<CartSummaryProps> = ({ subtotal, onCheckout }) => {
         <span className="text-gray-900 dark:text-white">₹{total.toFixed(2)}</span>
       </div>
       
+      {/* Checkout Button */}
       <Button 
-        onClick={() => {
-          console.log('CartSummary checkout button clicked');
-          console.log('onCheckout function:', onCheckout);
-          alert('Checkout button clicked! Check console for details.');
-          if (onCheckout) {
-            onCheckout();
-          } else {
-            console.error('onCheckout function is not provided');
-            alert('onCheckout function is not provided');
-          }
-        }}
-        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3"
+        onClick={handleCheckout}
+        disabled={subtotal === 0}
+        className="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white py-3 font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
         size="lg"
       >
-        Proceed to Checkout
+        <ShoppingCart className="h-5 w-5 mr-2" />
+        {subtotal === 0 ? 'Cart is Empty' : 'Proceed to Checkout'}
       </Button>
       
       {!discountInfo && (

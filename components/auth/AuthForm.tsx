@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +26,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
   
   const router = useRouter();
   const { signIn } = useAuth();
+  const emailAuthEnabled = useMemo(() => process.env.NEXT_PUBLIC_ENABLE_EMAIL_AUTH === 'true', []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -95,7 +96,14 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
         return;
       }
       
-      // Handle user sign in with generated credentials
+      if (!emailAuthEnabled) {
+        setError('Sign in via mobile/OTP is coming soon. Email logins are disabled.');
+        toast.info('Authentication disabled', { description: 'Email/password sign in is disabled for now.' });
+        setLoading(false);
+        return;
+      }
+
+      // Handle user sign in with generated credentials (only if enabled)
       const { error } = await signIn(email, password);
       
       if (error) {
@@ -143,7 +151,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
           Sign In
         </CardTitle>
         <CardDescription className="text-indigo-100">
-          Sign in with your mobile number
+          {emailAuthEnabled ? 'Sign in with your mobile number' : 'Email/password sign in is disabled'}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -161,6 +169,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
                 onChange={handleChange}
                 className="pl-10"
                 required
+                disabled={!emailAuthEnabled}
               />
             </div>
             <p className="text-xs text-gray-500">
@@ -179,6 +188,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
                 value={formData.password}
                 onChange={handleChange}
                 required
+                disabled={!emailAuthEnabled}
               />
               <Button
                 type="button"
@@ -199,13 +209,19 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
             </p>
           </div>
 
+          {!emailAuthEnabled && (
+            <div className="text-sm bg-yellow-50 text-yellow-800 p-3 rounded-md">
+              Email/password sign in is disabled. We are adding OTP/Clerk auth soon.
+            </div>
+          )}
+
           {error && (
             <div className="text-red-600 text-sm bg-red-50 p-3 rounded-md">
               {error}
             </div>
           )}
 
-          <Button type="submit" className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white shadow-lg" disabled={loading}>
+          <Button type="submit" className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white shadow-lg" disabled={loading || !emailAuthEnabled}>
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -40,7 +40,12 @@ const OrdersPage = () => {
           payment_method: order.paymentMethod || order.payment_method || 'cod',
           status: order.status || 'confirmed',
           total: order.total || 0,
-          items: order.items || []
+          items: order.items || [],
+          // Ensure customer information is available
+          customer_name: order.customer_name || order.customerInfo ? 
+            `${order.customerInfo?.firstName || ''} ${order.customerInfo?.lastName || ''}`.trim() : '',
+          customer_email: order.customer_email || order.customerInfo?.email || '',
+          customer_phone: order.customer_phone || order.customerInfo?.phone || ''
         })).sort((a, b) => new Date(b.orderDate || b.created_at).getTime() - new Date(a.orderDate || a.created_at).getTime());
       } catch (error) {
         console.error('Error reading localStorage orders:', error);
@@ -137,7 +142,7 @@ const OrdersPage = () => {
                 Error Loading Orders
               </h3>
               <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
-              <Button onClick={fetchOrders} variant="outline">
+              <Button onClick={() => fetchOrders(true)} variant="outline">
                 Try Again
               </Button>
             </div>

@@ -84,7 +84,7 @@ const OfferCards = () => {
   };
 
   return (
-    <section className="py-16 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+    <section className="py-16 bg-gray-50 dark:bg-gray-900">
       <div className="container mx-auto px-6">
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">

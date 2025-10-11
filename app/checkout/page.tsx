@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { ArrowLeft, CreditCard, Truck, MapPin, Banknote, Smartphone } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -13,18 +14,35 @@ import { Card } from '@/components/ui/card';
 import { useCart } from '@/context/CartContext';
 import { useOrders } from '@/hooks/useOrders';
 import { useAuth } from '@/context/AuthContext';
+import { useCoupons } from '@/hooks/useCoupons';
+import { FirstOrderCouponBanner } from '@/components/ui/coupon-display';
 import { toast } from 'sonner';
 
 const CheckoutPage = () => {
   const { state: cartState, clearCart } = useCart();
   const { createOrder } = useOrders();
   const { user } = useAuth();
+  const { getFirstOrderCoupon, applyCoupon } = useCoupons();
+  const searchParams = useSearchParams();
   const [currentStep, setCurrentStep] = useState(1);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderId, setOrderId] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderError, setOrderError] = useState('');
   const [driverDetails, setDriverDetails] = useState<any>(null);
+  
+  // Coupon state
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    code: string;
+    discount: number;
+    couponId?: string;
+  } | null>(null);
+  const [firstOrderCoupon, setFirstOrderCoupon] = useState<{
+    code: string;
+    discount: number;
+    message: string;
+  } | null>(null);
+  const [showFirstOrderBanner, setShowFirstOrderBanner] = useState(false);
 
   // Debug logging
   console.log('CheckoutPage rendered');
@@ -47,6 +65,7 @@ const CheckoutPage = () => {
 
   const [paymentMethod, setPaymentMethod] = useState('cod');
   const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [pendingStripe, setPendingStripe] = useState(false);
 
   // Tiered discount system
   const getDiscountInfo = (subtotal: number) => {
@@ -77,9 +96,22 @@ const CheckoutPage = () => {
 
   const discountInfo = getDiscountInfo(cartState.total);
   const deliveryFee = cartState.total >= 500 ? 0 : 415;
-  const couponDiscount = discountInfo?.type === 'coupon' ? discountInfo.amount : 0;
-  const tax = (cartState.total - couponDiscount) * 0.08; // 8% tax on discounted amount
-  const total = cartState.total - couponDiscount + deliveryFee + tax;
+  const tierDiscount = discountInfo?.type === 'coupon' ? discountInfo.amount : 0;
+  const couponDiscount = appliedCoupon?.discount || 0;
+  const totalDiscount = tierDiscount + couponDiscount;
+  const tax = (cartState.total - totalDiscount) * 0.08; // 8% tax on discounted amount
+  const total = cartState.total - totalDiscount + deliveryFee + tax;
+
+  // If returned from Stripe success, auto-place order (mark payment method)
+  useEffect(() => {
+    const success = searchParams?.get('success');
+    if (success === '1' && !orderPlaced && cartState.items.length > 0) {
+      setPaymentMethod('stripe');
+      // Place order after payment success
+      handlePlaceOrder();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   // Generate unique order ID
   const generateOrderId = () => {
@@ -112,6 +144,69 @@ const CheckoutPage = () => {
     };
   };
 
+  // Check for first order coupon
+  const checkFirstOrderCoupon = async () => {
+    if (!customerInfo.email || !customerInfo.phone) return;
+    
+    try {
+      const result = await getFirstOrderCoupon(
+        cartState.total,
+        customerInfo.email,
+        customerInfo.phone
+      );
+      
+      if (result.coupon_code && result.discount_amount > 0) {
+        setFirstOrderCoupon({
+          code: result.coupon_code,
+          discount: result.discount_amount,
+          message: result.message || 'First order discount applied!'
+        });
+        setShowFirstOrderBanner(true);
+      }
+    } catch (error) {
+      console.error('Error checking first order coupon:', error);
+    }
+  };
+
+  // Apply first order coupon
+  const handleApplyFirstOrderCoupon = async () => {
+    if (!firstOrderCoupon) return;
+    
+    try {
+      const result = await applyCoupon(
+        firstOrderCoupon.code,
+        cartState.total,
+        customerInfo.email,
+        customerInfo.phone
+      );
+      
+      if (result.success) {
+        setAppliedCoupon({
+          code: firstOrderCoupon.code,
+          discount: result.discount_amount,
+          couponId: result.coupon_id
+        });
+        setShowFirstOrderBanner(false);
+        toast.success('First order coupon applied!', {
+          description: `You saved ₹${result.discount_amount}`
+        });
+      } else {
+        toast.error('Failed to apply coupon', {
+          description: result.message
+        });
+      }
+    } catch (error) {
+      console.error('Error applying first order coupon:', error);
+      toast.error('Failed to apply coupon');
+    }
+  };
+
+  // Remove applied coupon
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    toast.success('Coupon removed');
+  };
+
   // Form validation
   const validateStep = (step: number) => {
     const newErrors: {[key: string]: string} = {};
@@ -134,6 +229,11 @@ const CheckoutPage = () => {
         } else if (!/^[6789]/.test(cleanPhone)) {
           newErrors.phone = 'Phone number must start with 6, 7, 8, or 9';
         }
+      }
+      
+      // Check for first order coupon after validation
+      if (Object.keys(newErrors).length === 0) {
+        checkFirstOrderCoupon();
       }
     }
     
@@ -192,25 +292,10 @@ const CheckoutPage = () => {
       };
       
       // Prepare order data for database
-      const orderData = user ? {
-        // Authenticated user order
-        user_id: user.id,
-        items: cartState.items,
-        subtotal: subtotal,
-        discount: discount,
-        delivery_fee: deliveryFee,
-        tax: tax,
-        total: total,
-        status: 'confirmed',
-        payment_method: paymentMethod,
-        delivery_address: {
-          ...deliveryInfo,
-          customer: customerInfo
-        }
-      } : {
-        // Guest user order
-        user_id: null,
-        customer_name: `${customerInfo.firstName} ${customerInfo.lastName}`,
+      const orderData = {
+        // For both authenticated and guest users, store customer information
+        user_id: user ? user.id : null,
+        customer_name: `${customerInfo.firstName} ${customerInfo.lastName}`.trim(),
         customer_email: customerInfo.email,
         customer_phone: customerInfo.phone.replace(/\D/g, ''), // Store only digits
         items: cartState.items,
@@ -221,20 +306,62 @@ const CheckoutPage = () => {
         total: total,
         status: 'confirmed',
         payment_method: paymentMethod,
+        // Coupon information
+        coupon_id: appliedCoupon?.couponId || null,
+        coupon_code: appliedCoupon?.code || null,
+        coupon_discount: appliedCoupon?.discount || 0,
         delivery_address: {
           ...deliveryInfo,
           customer: customerInfo
         }
       };
       
-      // Save to database FIRST
-      const { data: savedOrder, error: saveError } = await createOrder(orderData);
+      // Save to database FIRST - with fallback for guest orders
+      let savedOrder = null;
+      let saveError = null;
       
-      if (saveError) {
-        console.error('Database save failed:', saveError);
-        setOrderError('Failed to save order. Please try again.');
-        setIsProcessing(false);
-        return;
+      try {
+        const result = await createOrder(orderData);
+        savedOrder = result.data;
+        saveError = result.error;
+        
+        if (saveError) {
+          console.error('Database save failed:', saveError);
+          console.log('Attempting fallback to localStorage only...');
+          
+          // Fallback: Save to localStorage only if database fails
+          const localStorageOrder = {
+            ...order,
+            id: newOrderId,
+            fallback: true,
+            error: saveError
+          };
+          
+          const existingOrders = JSON.parse(localStorage.getItem('orders') || '[]');
+          existingOrders.push(localStorageOrder);
+          localStorage.setItem('orders', JSON.stringify(existingOrders));
+          
+          console.log('Order saved to localStorage as fallback');
+          savedOrder = { id: newOrderId }; // Use generated ID for fallback
+        }
+      } catch (dbError) {
+        console.error('Database connection error:', dbError);
+        console.log('Using localStorage fallback...');
+        
+        // Complete fallback to localStorage
+        const localStorageOrder = {
+          ...order,
+          id: newOrderId,
+          fallback: true,
+          error: 'Database unavailable'
+        };
+        
+        const existingOrders = JSON.parse(localStorage.getItem('orders') || '[]');
+        existingOrders.push(localStorageOrder);
+        localStorage.setItem('orders', JSON.stringify(existingOrders));
+        
+        savedOrder = { id: newOrderId };
+        saveError = null; // Clear error since we have a fallback
       }
       
       // Update order ID with database ID if available
@@ -255,11 +382,18 @@ const CheckoutPage = () => {
       clearCart();
       setOrderPlaced(true);
       
-      // Show success toast
-      toast.success('Order placed successfully!', {
-        description: `Order ID: ${savedOrder?.id || newOrderId}`,
-        duration: 3000
-      });
+          // Show success toast with appropriate message
+          if (saveError) {
+            toast.success('Order placed successfully! (Saved locally)', {
+              description: `Order ID: ${savedOrder?.id || newOrderId} - Database sync pending`,
+              duration: 5000
+            });
+          } else {
+            toast.success('Order placed successfully!', {
+              description: `Order ID: ${savedOrder?.id || newOrderId}`,
+              duration: 3000
+            });
+          }
       
       console.log('Order placed successfully:', savedOrder || order);
       
@@ -268,6 +402,42 @@ const CheckoutPage = () => {
       setOrderError('There was an error placing your order. Please try again.');
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  // Start Stripe Checkout before placing order
+  const startStripeCheckout = async () => {
+    if (!validateStep(3)) return;
+    setPendingStripe(true);
+    setOrderError('');
+    try {
+      const items = cartState.items.map((ci) => ({
+        name: ci.product.name,
+        price: ci.product.price,
+        unitAmount: ci.product.price,
+        quantity: ci.quantity,
+      }));
+
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items,
+          customer: { email: customerInfo.email },
+          currency: 'inr',
+          metadata: { source: 'f1-mart' },
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to start checkout');
+      if (data.url) {
+        window.location.href = data.url as string;
+      }
+    } catch (e: any) {
+      setOrderError(e?.message || 'Unable to start payment');
+    } finally {
+      setPendingStripe(false);
     }
   };
 
@@ -494,6 +664,45 @@ const CheckoutPage = () => {
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
               Checkout
             </h1>
+
+            {/* First Order Coupon Banner */}
+            {showFirstOrderBanner && firstOrderCoupon && (
+              <FirstOrderCouponBanner
+                couponCode={firstOrderCoupon.code}
+                discountAmount={firstOrderCoupon.discount}
+                message={firstOrderCoupon.message}
+                onApply={handleApplyFirstOrderCoupon}
+                onDismiss={() => setShowFirstOrderBanner(false)}
+              />
+            )}
+
+            {/* Applied Coupon Display */}
+            {appliedCoupon && (
+              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm text-green-700 dark:text-green-300">
+                        <strong>Coupon Applied:</strong> {appliedCoupon.code} - You saved ₹{appliedCoupon.discount}!
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleRemoveCoupon}
+                    className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-200"
+                  >
+                    Remove
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {/* Authentication Status */}
             {!user && (
@@ -830,20 +1039,37 @@ const CheckoutPage = () => {
                   <Button variant="outline" onClick={() => setCurrentStep(2)}>
                     Back
                   </Button>
-                  <Button 
-                    onClick={handlePlaceOrder}
-                    disabled={isProcessing}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white flex-1 disabled:opacity-50"
-                  >
-                    {isProcessing ? (
-                      <div className="flex items-center space-x-2">
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        <span>Placing Order...</span>
-                      </div>
-                    ) : (
-                      `Place Order (₹${total.toFixed(2)})`
-                    )}
-                  </Button>
+                  {paymentMethod === 'cod' ? (
+                    <Button 
+                      onClick={handlePlaceOrder}
+                      disabled={isProcessing}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white flex-1 disabled:opacity-50"
+                    >
+                      {isProcessing ? (
+                        <div className="flex items-center space-x-2">
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <span>Placing Order...</span>
+                        </div>
+                      ) : (
+                        `Place Order (₹${total.toFixed(2)})`
+                      )}
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={startStripeCheckout}
+                      disabled={pendingStripe}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white flex-1 disabled:opacity-50"
+                    >
+                      {pendingStripe ? (
+                        <div className="flex items-center space-x-2">
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <span>Redirecting to Payment...</span>
+                        </div>
+                      ) : (
+                        `Pay Securely (₹${total.toFixed(2)})`
+                      )}
+                    </Button>
+                  )}
                 </div>
               </Card>
             )}
@@ -877,13 +1103,25 @@ const CheckoutPage = () => {
                   <span className="font-medium text-gray-900 dark:text-white">₹{cartState.total.toFixed(2)}</span>
                 </div>
                 
+                {/* Tier Discount */}
+                {tierDiscount > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                      Tier Discount
+                    </span>
+                    <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                      -₹{tierDiscount.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+
                 {/* Coupon Discount */}
                 {couponDiscount > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                      Coupon Discount
+                    <span className="text-purple-600 dark:text-purple-400 font-medium">
+                      Coupon Discount ({appliedCoupon?.code})
                     </span>
-                    <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                    <span className="font-medium text-purple-600 dark:text-purple-400">
                       -₹{couponDiscount.toFixed(2)}
                     </span>
                   </div>

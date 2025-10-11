@@ -6,8 +6,11 @@ import { CartProvider } from '@/context/CartContext';
 import { WishlistProvider } from '@/context/WishlistContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { AuthProvider } from '@/context/AuthContext';
+import { FoodCartProvider } from '@/context/FoodCartContext';
 import { Toaster } from '@/components/ui/sonner';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import { PerformanceMonitor } from '@/components/PerformanceMonitor';
+import WhatsAppButton from '@/components/WhatsAppButton';
 
 export const metadata: Metadata = {
   title: 'F1 Mart - Fresh and Fast Delivery',
@@ -51,23 +54,28 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="font-sans">
-        <ThemeProvider>
-          <AuthProvider>
-            <CartProvider>
-              <WishlistProvider>
-                <div className="flex flex-col min-h-screen">
-                  <Header />
-                  <main className="flex-1">
-                    {children}
-                  </main>
-                  <Footer />
-                </div>
-                <Toaster />
-                <PerformanceMonitor />
-              </WishlistProvider>
-            </CartProvider>
-          </AuthProvider>
-        </ThemeProvider>
+        <ErrorBoundary>
+          <ThemeProvider>
+            <AuthProvider>
+              <CartProvider>
+                <WishlistProvider>
+                  <FoodCartProvider>
+                    <div className="flex flex-col min-h-screen">
+                      <Header />
+                      <main className="flex-1">
+                        {children}
+                      </main>
+                      <Footer />
+                    </div>
+                    <Toaster />
+                    <PerformanceMonitor />
+                    <WhatsAppButton />
+                  </FoodCartProvider>
+                </WishlistProvider>
+              </CartProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

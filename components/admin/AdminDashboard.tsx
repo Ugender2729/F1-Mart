@@ -9,6 +9,7 @@ import AddProductForm from './AddProductForm';
 import AddCategoryForm from './AddCategoryForm';
 import EditProductForm from './EditProductForm';
 import EditCategoryForm from './EditCategoryForm';
+import { StockManagement } from './StockManagement';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -283,9 +284,10 @@ const AdminDashboard = () => {
 
         {/* Main Content */}
         <Tabs defaultValue="orders" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 bg-gray-900 shadow-lg border border-gray-800">
+          <TabsList className="grid w-full grid-cols-4 bg-gray-900 shadow-lg border border-gray-800">
             <TabsTrigger value="products" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white text-gray-300 hover:text-white">Products</TabsTrigger>
             <TabsTrigger value="categories" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white text-gray-300 hover:text-white">Categories</TabsTrigger>
+            <TabsTrigger value="stock" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-orange-600 data-[state=active]:text-white text-gray-300 hover:text-white">Stock</TabsTrigger>
             <TabsTrigger value="orders" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-purple-600 data-[state=active]:text-white text-gray-300 hover:text-white">Orders</TabsTrigger>
           </TabsList>
 
@@ -398,6 +400,11 @@ const AdminDashboard = () => {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Stock Management Tab */}
+          <TabsContent value="stock" className="space-y-4">
+            <StockManagement />
           </TabsContent>
 
           {/* Orders Tab */}

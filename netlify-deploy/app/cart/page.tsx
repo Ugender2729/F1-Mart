@@ -82,12 +82,6 @@ const CartPage = () => {
             <div className="sticky top-24">
               <CartSummary
                 subtotal={cartState.total}
-                onCheckout={() => {
-                  console.log('Checkout button clicked, navigating to checkout...');
-                  console.log('Cart state:', cartState);
-                  alert('Navigating to checkout...');
-                  router.push('/checkout');
-                }}
               />
             </div>
           </div>
