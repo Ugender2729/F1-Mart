@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { ArrowLeft, CreditCard, Truck, MapPin, Banknote, Smartphone } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -13,18 +14,39 @@ import { Card } from '@/components/ui/card';
 import { useCart } from '@/context/CartContext';
 import { useOrders } from '@/hooks/useOrders';
 import { useAuth } from '@/context/AuthContext';
+import { useCoupons } from '@/hooks/useCoupons';
+import { FirstOrderCouponBanner } from '@/components/ui/coupon-display';
+import CustomerLocationCapture from '@/components/checkout/CustomerLocationCapture';
 import { toast } from 'sonner';
 
 const CheckoutPage = () => {
   const { state: cartState, clearCart } = useCart();
   const { createOrder } = useOrders();
   const { user } = useAuth();
+  const { getFirstOrderCoupon, applyCoupon } = useCoupons();
+  const searchParams = useSearchParams();
   const [currentStep, setCurrentStep] = useState(1);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderId, setOrderId] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderError, setOrderError] = useState('');
   const [driverDetails, setDriverDetails] = useState<any>(null);
+  
+  // Coupon state
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    code: string;
+    discount: number;
+    couponId?: string;
+  } | null>(null);
+  const [firstOrderCoupon, setFirstOrderCoupon] = useState<{
+    code: string;
+    discount: number;
+    message: string;
+  } | null>(null);
+  const [showFirstOrderBanner, setShowFirstOrderBanner] = useState(false);
+  
+  // Customer location state
+  const [customerLocation, setCustomerLocation] = useState<any>(null);
 
   // Debug logging
   console.log('CheckoutPage rendered');
@@ -47,6 +69,7 @@ const CheckoutPage = () => {
 
   const [paymentMethod, setPaymentMethod] = useState('cod');
   const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [pendingStripe, setPendingStripe] = useState(false);
 
   // Tiered discount system
   const getDiscountInfo = (subtotal: number) => {
@@ -77,9 +100,26 @@ const CheckoutPage = () => {
 
   const discountInfo = getDiscountInfo(cartState.total);
   const deliveryFee = cartState.total >= 500 ? 0 : 50;
-  const couponDiscount = discountInfo?.type === 'coupon' ? discountInfo.amount : 0;
-  const tax = (cartState.total - couponDiscount) * 0.18; // 18% GST on discounted amount
-  const total = cartState.total - couponDiscount + deliveryFee + tax;
+  const tierDiscount = discountInfo?.type === 'coupon' ? discountInfo.amount : 0;
+  const couponDiscount = appliedCoupon?.discount || 0;
+  const totalDiscount = tierDiscount + couponDiscount;
+  const restaurantCharges = cartState.total * 0.05; // 5% restaurant/packaging charges
+  const subtotalAfterDiscount = cartState.total - totalDiscount + restaurantCharges;
+  const cgst = subtotalAfterDiscount * 0.025; // 2.5% CGST
+  const sgst = subtotalAfterDiscount * 0.025; // 2.5% SGST
+  const totalGst = cgst + sgst; // Total 5% GST
+  const total = subtotalAfterDiscount + deliveryFee + totalGst;
+
+  // If returned from Stripe success, auto-place order (mark payment method)
+  useEffect(() => {
+    const success = searchParams?.get('success');
+    if (success === '1' && !orderPlaced && cartState.items.length > 0) {
+      setPaymentMethod('stripe');
+      // Place order after payment success
+      handlePlaceOrder();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   // Generate unique order ID
   const generateOrderId = () => {
@@ -112,6 +152,69 @@ const CheckoutPage = () => {
     };
   };
 
+  // Check for first order coupon
+  const checkFirstOrderCoupon = async () => {
+    if (!customerInfo.email || !customerInfo.phone) return;
+    
+    try {
+      const result = await getFirstOrderCoupon(
+        cartState.total,
+        customerInfo.email,
+        customerInfo.phone
+      );
+      
+      if (result.coupon_code && result.discount_amount > 0) {
+        setFirstOrderCoupon({
+          code: result.coupon_code,
+          discount: result.discount_amount,
+          message: result.message || 'First order discount applied!'
+        });
+        setShowFirstOrderBanner(true);
+      }
+    } catch (error) {
+      console.error('Error checking first order coupon:', error);
+    }
+  };
+
+  // Apply first order coupon
+  const handleApplyFirstOrderCoupon = async () => {
+    if (!firstOrderCoupon) return;
+    
+    try {
+      const result = await applyCoupon(
+        firstOrderCoupon.code,
+        cartState.total,
+        customerInfo.email,
+        customerInfo.phone
+      );
+      
+      if (result.success) {
+        setAppliedCoupon({
+          code: firstOrderCoupon.code,
+          discount: result.discount_amount,
+          couponId: result.coupon_id
+        });
+        setShowFirstOrderBanner(false);
+        toast.success('First order coupon applied!', {
+          description: `You saved ₹${result.discount_amount}`
+        });
+      } else {
+        toast.error('Failed to apply coupon', {
+          description: result.message
+        });
+      }
+    } catch (error) {
+      console.error('Error applying first order coupon:', error);
+      toast.error('Failed to apply coupon');
+    }
+  };
+
+  // Remove applied coupon
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    toast.success('Coupon removed');
+  };
+
   // Form validation
   const validateStep = (step: number) => {
     const newErrors: {[key: string]: string} = {};
@@ -134,6 +237,11 @@ const CheckoutPage = () => {
         } else if (!/^[6789]/.test(cleanPhone)) {
           newErrors.phone = 'Phone number must start with 6, 7, 8, or 9';
         }
+      }
+      
+      // Check for first order coupon after validation
+      if (Object.keys(newErrors).length === 0) {
+        checkFirstOrderCoupon();
       }
     }
     
@@ -188,29 +296,15 @@ const CheckoutPage = () => {
         total,
         status: 'confirmed',
         orderDate: new Date().toISOString(),
-        estimatedDelivery: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours from now
+        estimatedDelivery: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
+        customer_location: customerLocation
       };
       
       // Prepare order data for database
-      const orderData = user ? {
-        // Authenticated user order
-        user_id: user.id,
-        items: cartState.items,
-        subtotal: subtotal,
-        discount: discount,
-        delivery_fee: deliveryFee,
-        tax: tax,
-        total: total,
-        status: 'confirmed',
-        payment_method: paymentMethod,
-        delivery_address: {
-          ...deliveryInfo,
-          customer: customerInfo
-        }
-      } : {
-        // Guest user order
-        user_id: null,
-        customer_name: `${customerInfo.firstName} ${customerInfo.lastName}`,
+      const orderData = {
+        // For both authenticated and guest users, store customer information
+        user_id: user ? user.id : null,
+        customer_name: `${customerInfo.firstName} ${customerInfo.lastName}`.trim(),
         customer_email: customerInfo.email,
         customer_phone: customerInfo.phone.replace(/\D/g, ''), // Store only digits
         items: cartState.items,
@@ -221,20 +315,64 @@ const CheckoutPage = () => {
         total: total,
         status: 'confirmed',
         payment_method: paymentMethod,
+        // Coupon information
+        coupon_id: appliedCoupon?.couponId || null,
+        coupon_code: appliedCoupon?.code || null,
+        coupon_discount: appliedCoupon?.discount || 0,
         delivery_address: {
           ...deliveryInfo,
           customer: customerInfo
-        }
+        },
+        // Add customer GPS location
+        customer_location: customerLocation
       };
       
-      // Save to database FIRST
-      const { data: savedOrder, error: saveError } = await createOrder(orderData);
+      // Save to database FIRST - with fallback for guest orders
+      let savedOrder = null;
+      let saveError = null;
       
-      if (saveError) {
-        console.error('Database save failed:', saveError);
-        setOrderError('Failed to save order. Please try again.');
-        setIsProcessing(false);
-        return;
+      try {
+        const result = await createOrder(orderData);
+        savedOrder = result.data;
+        saveError = result.error;
+        
+        if (saveError) {
+          console.error('Database save failed:', saveError);
+          console.log('Attempting fallback to localStorage only...');
+          
+          // Fallback: Save to localStorage only if database fails
+          const localStorageOrder = {
+            ...order,
+            id: newOrderId,
+            fallback: true,
+            error: saveError
+          };
+          
+          const existingOrders = JSON.parse(localStorage.getItem('orders') || '[]');
+          existingOrders.push(localStorageOrder);
+          localStorage.setItem('orders', JSON.stringify(existingOrders));
+          
+          console.log('Order saved to localStorage as fallback');
+          savedOrder = { id: newOrderId }; // Use generated ID for fallback
+        }
+      } catch (dbError) {
+        console.error('Database connection error:', dbError);
+        console.log('Using localStorage fallback...');
+        
+        // Complete fallback to localStorage
+        const localStorageOrder = {
+          ...order,
+          id: newOrderId,
+          fallback: true,
+          error: 'Database unavailable'
+        };
+        
+        const existingOrders = JSON.parse(localStorage.getItem('orders') || '[]');
+        existingOrders.push(localStorageOrder);
+        localStorage.setItem('orders', JSON.stringify(existingOrders));
+        
+        savedOrder = { id: newOrderId };
+        saveError = null; // Clear error since we have a fallback
       }
       
       // Update order ID with database ID if available
@@ -255,11 +393,18 @@ const CheckoutPage = () => {
       clearCart();
       setOrderPlaced(true);
       
-      // Show success toast
-      toast.success('Order placed successfully!', {
-        description: `Order ID: ${savedOrder?.id || newOrderId}`,
-        duration: 3000
-      });
+          // Show success toast with appropriate message
+          if (saveError) {
+            toast.success('Order placed successfully! (Saved locally)', {
+              description: `Order ID: ${savedOrder?.id || newOrderId} - Database sync pending`,
+              duration: 5000
+            });
+          } else {
+            toast.success('Order placed successfully!', {
+              description: `Order ID: ${savedOrder?.id || newOrderId}`,
+              duration: 3000
+            });
+          }
       
       console.log('Order placed successfully:', savedOrder || order);
       
@@ -270,6 +415,7 @@ const CheckoutPage = () => {
       setIsProcessing(false);
     }
   };
+
 
   if (cartState.items.length === 0 && !orderPlaced) {
     return (
@@ -460,6 +606,45 @@ const CheckoutPage = () => {
               Checkout
             </h1>
 
+            {/* First Order Coupon Banner */}
+            {showFirstOrderBanner && firstOrderCoupon && (
+              <FirstOrderCouponBanner
+                couponCode={firstOrderCoupon.code}
+                discountAmount={firstOrderCoupon.discount}
+                message={firstOrderCoupon.message}
+                onApply={handleApplyFirstOrderCoupon}
+                onDismiss={() => setShowFirstOrderBanner(false)}
+              />
+            )}
+
+            {/* Applied Coupon Display */}
+            {appliedCoupon && (
+              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm text-green-700 dark:text-green-300">
+                        <strong>Coupon Applied:</strong> {appliedCoupon.code} - You saved ₹{appliedCoupon.discount}!
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleRemoveCoupon}
+                    className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-200"
+                  >
+                    Remove
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {/* Authentication Status */}
             {!user && (
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
@@ -580,8 +765,20 @@ const CheckoutPage = () => {
                     <Label htmlFor="phone">Phone Number</Label>
                     <Input
                       id="phone"
+                      type="tel"
+                      inputMode="numeric"
+                      pattern="[6-9][0-9]{9}"
                       value={customerInfo.phone}
-                      onChange={(e) => setCustomerInfo({...customerInfo, phone: e.target.value})}
+                      onChange={(e) => {
+                        const digits = e.target.value.replace(/\D/g, '');
+                        // enforce first digit 6-9 and total length 10
+                        const next = digits.length === 0
+                          ? ''
+                          : /^[6-9]/.test(digits[0])
+                            ? digits.slice(0, 10)
+                            : '';
+                        setCustomerInfo({ ...customerInfo, phone: next });
+                      }}
                       placeholder="9876543210"
                       maxLength={10}
                       className={errors.phone ? 'border-red-500' : ''}
@@ -615,6 +812,15 @@ const CheckoutPage = () => {
                 </div>
 
                 <div className="space-y-4">
+                  {/* Customer Location Capture */}
+                  <CustomerLocationCapture 
+                    onLocationCaptured={(location) => {
+                      setCustomerLocation(location);
+                      console.log('📍 Customer location captured:', location);
+                    }}
+                    autoCapture={true}
+                  />
+                  
                   <div>
                     <Label htmlFor="address">Street Address</Label>
                     <Input
@@ -653,9 +859,16 @@ const CheckoutPage = () => {
                       <Label htmlFor="zipCode">ZIP Code</Label>
                       <Input
                         id="zipCode"
+                        type="tel"
+                        inputMode="numeric"
+                        pattern="\\d{6}"
                         value={deliveryInfo.zipCode}
-                        onChange={(e) => setDeliveryInfo({...deliveryInfo, zipCode: e.target.value})}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/\D/g, '').slice(0, 6);
+                          setDeliveryInfo({ ...deliveryInfo, zipCode: digits });
+                        }}
                         placeholder="400001"
+                        maxLength={6}
                         className={errors.zipCode ? 'border-red-500' : ''}
                       />
                       {errors.zipCode && <p className="text-red-500 text-sm mt-1">{errors.zipCode}</p>}
@@ -789,17 +1002,34 @@ const CheckoutPage = () => {
                   <span className="font-medium text-gray-900 dark:text-white">₹{cartState.total.toFixed(2)}</span>
                 </div>
                 
+                {/* Tier Discount */}
+                {tierDiscount > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                      Tier Discount
+                    </span>
+                    <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                      -₹{tierDiscount.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+
                 {/* Coupon Discount */}
                 {couponDiscount > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                      Coupon Discount
+                    <span className="text-purple-600 dark:text-purple-400 font-medium">
+                      Coupon Discount ({appliedCoupon?.code})
                     </span>
-                    <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                    <span className="font-medium text-purple-600 dark:text-purple-400">
                       -₹{couponDiscount.toFixed(2)}
                     </span>
                   </div>
                 )}
+                
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600 dark:text-gray-400">Restaurant Charges (5%)</span>
+                  <span className="font-medium text-gray-900 dark:text-white">₹{restaurantCharges.toFixed(2)}</span>
+                </div>
                 
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600 dark:text-gray-400">
@@ -809,9 +1039,21 @@ const CheckoutPage = () => {
                     {deliveryFee === 0 ? 'Free' : `₹${deliveryFee.toFixed(2)}`}
                   </span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">Tax</span>
-                  <span className="font-medium text-gray-900 dark:text-white">₹{tax.toFixed(2)}</span>
+                
+                {/* GST Breakdown */}
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-2 mt-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">CGST (2.5%)</span>
+                    <span className="font-medium text-gray-900 dark:text-white">₹{cgst.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm mt-1">
+                    <span className="text-gray-600 dark:text-gray-400">SGST (2.5%)</span>
+                    <span className="font-medium text-gray-900 dark:text-white">₹{sgst.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm mt-1 font-medium">
+                    <span className="text-gray-700 dark:text-gray-300">Total GST (5%)</span>
+                    <span className="text-gray-900 dark:text-white">₹{totalGst.toFixed(2)}</span>
+                  </div>
                 </div>
               </div>
               

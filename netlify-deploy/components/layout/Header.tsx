@@ -3,11 +3,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search, ShoppingCart, Heart, User, Menu, X, Home, LogOut, UserCircle } from 'lucide-react';
+import { Search, ShoppingCart, User, Menu, X, Home, LogOut, UserCircle, Package, Utensils, Gift } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCart } from '@/context/CartContext';
-import { useWishlist } from '@/context/WishlistContext';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 
@@ -16,7 +15,6 @@ const Header = () => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { state: cartState } = useCart();
-  const { wishlist } = useWishlist();
   const { user, signOut } = useAuth();
   const router = useRouter();
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -131,25 +129,25 @@ const Header = () => {
 
   return (
     <header className="sticky top-0 z-50 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 shadow-lg border-b border-purple-500/20">
-      <div className="container mx-auto px-6">
-        <div className="flex items-center justify-between h-24">
+      <div className="container mx-auto px-3 md:px-6">
+        <div className="flex items-center justify-between h-16 md:h-24">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-4 group">
+          <Link href="/" className="flex items-center space-x-2 md:space-x-4 group">
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-br from-orange-400 via-red-500 to-pink-500 rounded-2xl blur-sm opacity-80 group-hover:opacity-100 transition-all duration-300"></div>
-              <div className="relative bg-gradient-to-br from-orange-400 via-red-500 to-pink-500 text-white rounded-2xl p-3 group-hover:scale-110 transition-all duration-300 shadow-xl">
+              <div className="relative bg-gradient-to-br from-orange-400 via-red-500 to-pink-500 text-white rounded-2xl p-2 md:p-3 group-hover:scale-110 transition-all duration-300 shadow-xl">
                 <div className="flex items-center justify-center">
-                  <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold text-lg">F</span>
+                  <div className="w-6 h-6 md:w-8 md:h-8 bg-white/20 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-sm md:text-lg">F</span>
                   </div>
                 </div>
               </div>
             </div>
             <div className="flex flex-col">
-              <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-red-500 to-pink-500 group-hover:from-pink-400 group-hover:via-red-400 group-hover:to-orange-400 transition-all duration-300">
-                FreshMart
+              <span className="text-xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-red-500 to-pink-500 group-hover:from-pink-400 group-hover:via-red-400 group-hover:to-orange-400 transition-all duration-300">
+                F1 Mart
               </span>
-              <span className="text-sm text-gray-300 font-medium tracking-wider">PREMIUM GROCERIES</span>
+              <span className="text-xs md:text-sm text-gray-300 font-medium tracking-wider hidden md:block">FRESH AND FAST DELIVERY</span>
             </div>
           </Link>
 
@@ -187,19 +185,29 @@ const Header = () => {
               </Button>
             </Link>
 
-            
-            {/* Wishlist */}
-            <Link href="/wishlist">
-              <Button variant="ghost" size="sm" className="relative bg-white/20 hover:bg-white/30 text-white rounded-xl p-3 transition-all duration-300 shadow-md">
-                <Heart className="h-5 w-5" />
-                {wishlist.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold shadow-lg">
-                    {wishlist.length}
-                  </span>
-                )}
+            {/* Combos Button */}
+            <Link href="/combos">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="bg-white/20 hover:bg-white/30 text-white rounded-xl p-3 transition-all duration-300 shadow-md"
+                title="Combo Deals"
+              >
+                <Gift className="h-5 w-5" />
               </Button>
             </Link>
 
+            {/* Food Delivery Button - Coming Soon */}
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="bg-white/20 hover:bg-white/30 text-white rounded-xl p-3 transition-all duration-300 shadow-md cursor-not-allowed opacity-60"
+              title="Food Delivery - Coming Soon"
+              disabled
+            >
+              <Utensils className="h-5 w-5" />
+            </Button>
+            
             {/* Cart */}
             <Link href="/cart">
               <Button variant="ghost" size="sm" className="relative bg-white/20 hover:bg-white/30 text-white rounded-xl p-3 transition-all duration-300 shadow-md">
@@ -246,7 +254,15 @@ const Header = () => {
                       onClick={() => setIsUserMenuOpen(false)}
                     >
                       <ShoppingCart className="h-4 w-4 mr-2" />
-                      Orders
+                      My Orders
+                    </Link>
+                    <Link 
+                      href="/order-history" 
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      <Package className="h-4 w-4 mr-2" />
+                      Order History
                     </Link>
                     <button
                       onClick={handleLogout}
@@ -268,86 +284,221 @@ const Header = () => {
             )}
           </div>
 
+          {/* Mobile Navigation */}
+          <div className="flex md:hidden items-center space-x-2">
+            {/* Cart Button */}
+            <Link href="/cart">
+              <Button variant="ghost" size="sm" className="relative bg-white/20 hover:bg-white/30 text-white rounded-xl p-2 transition-all duration-300 shadow-md">
+                <ShoppingCart className="h-5 w-5" />
+                {cartState.itemCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-bold shadow-lg">
+                    {cartState.itemCount}
+                  </span>
+                )}
+              </Button>
+            </Link>
+
+            {/* Auth Button */}
+            {user ? (
+              <div className="relative" ref={userMenuRef}>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="bg-white/20 hover:bg-white/30 text-white rounded-xl p-2 transition-all duration-300 shadow-md"
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                >
+                  <UserCircle className="h-5 w-5" />
+                </Button>
+                
+                {/* User Dropdown Menu */}
+                {isUserMenuOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">
+                    <div className="px-4 py-2 border-b border-gray-100">
+                      <p className="text-sm font-medium text-gray-900">{getUserDisplayInfo().name}</p>
+                      <p className="text-xs text-gray-500">{getUserDisplayInfo().info}</p>
+                    </div>
+                    <Link 
+                      href="/profile" 
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      <User className="h-4 w-4 mr-2" />
+                      Profile
+                    </Link>
+                    <Link 
+                      href="/orders" 
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      <ShoppingCart className="h-4 w-4 mr-2" />
+                      My Orders
+                    </Link>
+                    <Link 
+                      href="/order-history" 
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      <Package className="h-4 w-4 mr-2" />
+                      Order History
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link href="/auth">
+                <Button variant="ghost" size="sm" className="bg-white/20 hover:bg-white/30 text-white rounded-xl p-2 transition-all duration-300 shadow-md">
+                  <User className="h-5 w-5" />
+                </Button>
+              </Link>
+            )}
+
           {/* Mobile Menu Button */}
           <Button
             variant="ghost"
             size="sm"
-            className="md:hidden bg-white/20 hover:bg-white/30 text-white rounded-xl p-3 transition-all duration-300 shadow-md"
+              className="bg-white/20 hover:bg-white/30 text-white rounded-xl p-2 transition-all duration-300 shadow-md"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
-            {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
+          </div>
         </div>
 
         {/* Mobile Search */}
-        <div className="md:hidden py-3">
-          <form onSubmit={handleSearch} className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/80" />
-            <Input
-              type="text"
-              placeholder="Search for groceries..."
-              value={searchQuery}
-              onChange={handleSearchInputChange}
-              className="pl-10 pr-16 w-full bg-white/20 border-white/30 text-white placeholder-white/80 focus:bg-white/30 focus:border-white/50 rounded-xl shadow-lg"
-            />
-            <Button
-              type="submit"
-              size="sm"
-              className="absolute right-1 top-1/2 transform -translate-y-1/2 bg-white/30 hover:bg-white/40 text-white px-3 py-1 text-xs rounded-lg shadow-md"
-            >
-              Search
-            </Button>
+        <div className="md:hidden pb-2 px-1">
+          <form onSubmit={handleSearch} className="w-full">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+              <Input
+                type="search"
+                placeholder="Search products..."
+                value={searchQuery}
+                onChange={handleSearchInputChange}
+                className="w-full h-9 pl-10 pr-16 bg-white text-gray-900 placeholder-gray-500 border-0 rounded-lg shadow-md focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm"
+              />
+              <Button
+                type="submit"
+                size="sm"
+                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white px-2 text-xs font-bold rounded-md shadow-sm transition-all duration-200"
+              >
+                Go
+              </Button>
+            </div>
           </form>
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile Menu Overlay */}
         {isMenuOpen && (
-          <div className="md:hidden border-t border-white/20 py-4 space-y-4">
-            <Link href="/" className="flex items-center space-x-2 text-white hover:text-white/80 transition-colors">
-              <Home className="h-5 w-5" />
-              <span>Home</span>
-            </Link>
-            <Link href="/wishlist" className="flex items-center space-x-2 text-white hover:text-white/80 transition-colors">
-              <Heart className="h-5 w-5" />
-              <span>Wishlist ({wishlist.length})</span>
-            </Link>
-            <Link href="/cart" className="flex items-center space-x-2 text-white hover:text-white/80 transition-colors">
-              <ShoppingCart className="h-5 w-5" />
-              <span>Cart ({cartState.itemCount})</span>
-            </Link>
+          <>
+            {/* Backdrop */}
+            <div 
+              className="fixed inset-0 bg-black/50 z-40 md:hidden"
+              onClick={() => setIsMenuOpen(false)}
+            />
             
-            {/* Mobile Auth Section */}
-            {user ? (
-              <>
-                <div className="border-t border-white/20 pt-4">
-                  <div className="px-2 py-2">
-                    <p className="text-sm font-medium text-white">{getUserDisplayInfo().name}</p>
-                    <p className="text-xs text-white/70">{getUserDisplayInfo().info}</p>
+            {/* Slide-out Menu */}
+            <div className="fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-white shadow-2xl z-50 md:hidden transform transition-transform duration-300 ease-in-out">
+              {/* Menu Header */}
+              <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900">Menu</h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full"
+                >
+                  <X className="h-5 w-5 text-gray-500" />
+                </Button>
+              </div>
+              
+              {/* Menu Content */}
+              <div className="flex flex-col h-full">
+                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                  {/* Quick Links */}
+                  <div className="space-y-2">
+                    <Link 
+                      href="/" 
+                      className="flex items-center space-x-3 p-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <Home className="h-5 w-5 text-orange-500" />
+                      <span className="font-medium">Home</span>
+                    </Link>
+                    <Link 
+                      href="/combos" 
+                      className="flex items-center space-x-3 p-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <Gift className="h-5 w-5 text-orange-500" />
+                      <span className="font-medium">Combo Deals</span>
+            </Link>
+                    <div className="flex items-center space-x-3 p-3 text-gray-400 rounded-lg cursor-not-allowed opacity-60">
+                      <Utensils className="h-5 w-5" />
+                      <span className="font-medium">Food Delivery (Coming Soon)</span>
+                    </div>
+                    <Link 
+                      href="/categories" 
+                      className="flex items-center space-x-3 p-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <Package className="h-5 w-5 text-orange-500" />
+                      <span className="font-medium">Categories</span>
+            </Link>
+                    <Link 
+                      href="/deals" 
+                      className="flex items-center space-x-3 p-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <Gift className="h-5 w-5 text-orange-500" />
+                      <span className="font-medium">Deals</span>
+            </Link>
                   </div>
-                  <Link href="/profile" className="flex items-center space-x-2 text-white hover:text-white/80 transition-colors">
-                    <User className="h-5 w-5" />
-                    <span>Profile</span>
+                  
+                  {/* Additional Links */}
+                  <div className="border-t border-gray-200 pt-4 mt-4">
+                    <Link 
+                      href="/about" 
+                      className="flex items-center space-x-3 p-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <User className="h-5 w-5 text-gray-400" />
+                      <span className="font-medium">About Us</span>
                   </Link>
-                  <Link href="/orders" className="flex items-center space-x-2 text-white hover:text-white/80 transition-colors">
-                    <ShoppingCart className="h-5 w-5" />
-                    <span>Orders</span>
+                    <Link 
+                      href="/contact" 
+                      className="flex items-center space-x-3 p-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <User className="h-5 w-5 text-gray-400" />
+                      <span className="font-medium">Contact</span>
                   </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center space-x-2 text-red-300 hover:text-red-200 transition-colors"
-                  >
-                    <LogOut className="h-5 w-5" />
-                    <span>Logout</span>
-                  </button>
+                    <Link 
+                      href="/help" 
+                      className="flex items-center space-x-3 p-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <User className="h-5 w-5 text-gray-400" />
+                      <span className="font-medium">Help</span>
+                  </Link>
+                  </div>
+                </div>
+                
+                {/* Footer */}
+                <div className="p-4 border-t border-gray-200 bg-gray-50">
+                  <p className="text-xs text-gray-500 text-center">
+                    F1 Mart - Fresh & Fast Delivery
+                  </p>
+                </div>
+              </div>
                 </div>
               </>
-            ) : (
-              <Link href="/auth" className="flex items-center space-x-2 text-white hover:text-white/80 transition-colors">
-                <User className="h-5 w-5" />
-                <span>Sign In</span>
-              </Link>
-            )}
-          </div>
         )}
       </div>
     </header>

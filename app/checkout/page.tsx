@@ -103,8 +103,12 @@ const CheckoutPage = () => {
   const tierDiscount = discountInfo?.type === 'coupon' ? discountInfo.amount : 0;
   const couponDiscount = appliedCoupon?.discount || 0;
   const totalDiscount = tierDiscount + couponDiscount;
-  const tax = (cartState.total - totalDiscount) * 0.18; // 18% GST on discounted amount
-  const total = cartState.total - totalDiscount + deliveryFee + tax;
+  const restaurantCharges = cartState.total * 0.05; // 5% restaurant/packaging charges
+  const subtotalAfterDiscount = cartState.total - totalDiscount + restaurantCharges;
+  const cgst = subtotalAfterDiscount * 0.025; // 2.5% CGST
+  const sgst = subtotalAfterDiscount * 0.025; // 2.5% SGST
+  const totalGst = cgst + sgst; // Total 5% GST
+  const total = subtotalAfterDiscount + deliveryFee + totalGst;
 
   // If returned from Stripe success, auto-place order (mark payment method)
   useEffect(() => {
@@ -1023,6 +1027,11 @@ const CheckoutPage = () => {
                 )}
                 
                 <div className="flex justify-between text-sm">
+                  <span className="text-gray-600 dark:text-gray-400">Restaurant Charges (5%)</span>
+                  <span className="font-medium text-gray-900 dark:text-white">₹{restaurantCharges.toFixed(2)}</span>
+                </div>
+                
+                <div className="flex justify-between text-sm">
                   <span className="text-gray-600 dark:text-gray-400">
                     Delivery {cartState.total >= 500 && '(Free over ₹500)'}
                   </span>
@@ -1030,9 +1039,21 @@ const CheckoutPage = () => {
                     {deliveryFee === 0 ? 'Free' : `₹${deliveryFee.toFixed(2)}`}
                   </span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">Tax</span>
-                  <span className="font-medium text-gray-900 dark:text-white">₹{tax.toFixed(2)}</span>
+                
+                {/* GST Breakdown */}
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-2 mt-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">CGST (2.5%)</span>
+                    <span className="font-medium text-gray-900 dark:text-white">₹{cgst.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm mt-1">
+                    <span className="text-gray-600 dark:text-gray-400">SGST (2.5%)</span>
+                    <span className="font-medium text-gray-900 dark:text-white">₹{sgst.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm mt-1 font-medium">
+                    <span className="text-gray-700 dark:text-gray-300">Total GST (5%)</span>
+                    <span className="text-gray-900 dark:text-white">₹{totalGst.toFixed(2)}</span>
+                  </div>
                 </div>
               </div>
               

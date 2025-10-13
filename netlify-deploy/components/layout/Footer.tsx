@@ -19,9 +19,9 @@ const Footer = () => {
 
   const handleSocialClick = (platform: string) => {
     const urls = {
-      facebook: 'https://facebook.com/freshmarket',
-      twitter: 'https://twitter.com/freshmarket',
-      instagram: 'https://instagram.com/freshmarket'
+      facebook: 'https://facebook.com/f1mart',
+      twitter: 'https://twitter.com/f1mart',
+      instagram: 'https://instagram.com/f1mart'
     };
     window.open(urls[platform as keyof typeof urls], '_blank');
   };
@@ -32,10 +32,10 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Company Info */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">FreshMarket</h3>
+            <h3 className="text-lg font-semibold mb-4">F1 Mart</h3>
             <p className="text-gray-400 mb-4">
               Your trusted partner for fresh groceries delivered right to your doorstep.
-              Quality, convenience, and freshness guaranteed.
+              Fresh and fast delivery with quality and convenience guaranteed.
             </p>
             <div className="flex space-x-4">
               <Button 
@@ -69,11 +69,31 @@ const Footer = () => {
           <div>
             <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
             <ul className="space-y-2 text-gray-400">
-              <li><Link href="/products" className="hover:text-white transition-colors">All Products</Link></li>
-              <li><Link href="/categories" className="hover:text-white transition-colors">Categories</Link></li>
-              <li><Link href="/deals" className="hover:text-white transition-colors">Special Deals</Link></li>
-              <li><Link href="/about" className="hover:text-white transition-colors">About Us</Link></li>
-              <li><Link href="/contact" className="hover:text-white transition-colors">Contact</Link></li>
+              <li>
+                <Link href="/products" className="hover:text-white transition-colors block py-1">
+                  All Products
+                </Link>
+              </li>
+              <li>
+                <Link href="/categories" className="hover:text-white transition-colors block py-1">
+                  Categories
+                </Link>
+              </li>
+              <li>
+                <Link href="/deals" className="hover:text-white transition-colors block py-1">
+                  Special Deals
+                </Link>
+              </li>
+              <li>
+                <Link href="/about" className="hover:text-white transition-colors block py-1">
+                  About Us
+                </Link>
+              </li>
+              <li>
+                <Link href="/contact" className="hover:text-white transition-colors block py-1">
+                  Contact
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -81,11 +101,36 @@ const Footer = () => {
           <div>
             <h3 className="text-lg font-semibold mb-4">Customer Service</h3>
             <ul className="space-y-2 text-gray-400">
-              <li><Link href="/help" className="hover:text-white transition-colors">Help Center</Link></li>
-              <li><Link href="/returns" className="hover:text-white transition-colors">Returns & Refunds</Link></li>
-              <li><Link href="/shipping" className="hover:text-white transition-colors">Shipping Info</Link></li>
-              <li><Link href="/faq" className="hover:text-white transition-colors">FAQ</Link></li>
-              <li><Link href="/terms" className="hover:text-white transition-colors">Terms & Conditions</Link></li>
+              <li>
+                <Link href="/help" className="hover:text-white transition-colors block py-1">
+                  Help Center
+                </Link>
+              </li>
+              <li>
+                <Link href="/feedback" className="hover:text-emerald-400 transition-colors font-semibold block py-1">
+                  💬 Help Us Improve
+                </Link>
+              </li>
+              <li>
+                <Link href="/returns" className="hover:text-white transition-colors block py-1">
+                  Returns & Refunds
+                </Link>
+              </li>
+              <li>
+                <Link href="/shipping" className="hover:text-white transition-colors block py-1">
+                  Shipping Info
+                </Link>
+              </li>
+              <li>
+                <Link href="/faq" className="hover:text-white transition-colors block py-1">
+                  FAQ
+                </Link>
+              </li>
+              <li>
+                <Link href="/terms" className="hover:text-white transition-colors block py-1">
+                  Terms & Conditions
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -93,17 +138,17 @@ const Footer = () => {
           <div>
             <h3 className="text-lg font-semibold mb-4">Stay Connected</h3>
             <div className="space-y-3 text-gray-400 mb-6">
-              <div className="flex items-center space-x-2">
+              <a href="tel:1800FRESH01" className="flex items-center space-x-2 hover:text-white transition-colors">
                 <Phone className="h-4 w-4" />
                 <span>1-800-FRESH-01</span>
-              </div>
-              <div className="flex items-center space-x-2">
+              </a>
+              <a href="mailto:help@f1mart.com" className="flex items-center space-x-2 hover:text-white transition-colors">
                 <Mail className="h-4 w-4" />
-                <span>help@freshmarket.com</span>
-              </div>
+                <span>help@f1mart.com</span>
+              </a>
               <div className="flex items-center space-x-2">
                 <MapPin className="h-4 w-4" />
-                <span>Available in 50+ cities</span>
+                <span>Telangana, India</span>
               </div>
             </div>
 
@@ -129,7 +174,7 @@ const Footer = () => {
         </div>
 
         <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400 text-sm">
-          <p>&copy; 2025 FreshMarket. All rights reserved. Made with ❤️ for fresh food lovers.</p>
+          <p>&copy; 2025 F1 Mart. All rights reserved. Made with ❤️ for fresh food lovers.</p>
         </div>
       </div>
     </footer>
