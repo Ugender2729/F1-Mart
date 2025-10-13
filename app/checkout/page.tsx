@@ -16,6 +16,7 @@ import { useOrders } from '@/hooks/useOrders';
 import { useAuth } from '@/context/AuthContext';
 import { useCoupons } from '@/hooks/useCoupons';
 import { FirstOrderCouponBanner } from '@/components/ui/coupon-display';
+import CustomerLocationCapture from '@/components/checkout/CustomerLocationCapture';
 import { toast } from 'sonner';
 
 const CheckoutPage = () => {
@@ -43,6 +44,9 @@ const CheckoutPage = () => {
     message: string;
   } | null>(null);
   const [showFirstOrderBanner, setShowFirstOrderBanner] = useState(false);
+  
+  // Customer location state
+  const [customerLocation, setCustomerLocation] = useState<any>(null);
 
   // Debug logging
   console.log('CheckoutPage rendered');
@@ -95,11 +99,11 @@ const CheckoutPage = () => {
   };
 
   const discountInfo = getDiscountInfo(cartState.total);
-  const deliveryFee = cartState.total >= 500 ? 0 : 415;
+  const deliveryFee = cartState.total >= 500 ? 0 : 50;
   const tierDiscount = discountInfo?.type === 'coupon' ? discountInfo.amount : 0;
   const couponDiscount = appliedCoupon?.discount || 0;
   const totalDiscount = tierDiscount + couponDiscount;
-  const tax = (cartState.total - totalDiscount) * 0.08; // 8% tax on discounted amount
+  const tax = (cartState.total - totalDiscount) * 0.18; // 18% GST on discounted amount
   const total = cartState.total - totalDiscount + deliveryFee + tax;
 
   // If returned from Stripe success, auto-place order (mark payment method)
@@ -288,7 +292,8 @@ const CheckoutPage = () => {
         total,
         status: 'confirmed',
         orderDate: new Date().toISOString(),
-        estimatedDelivery: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours from now
+        estimatedDelivery: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
+        customer_location: customerLocation
       };
       
       // Prepare order data for database
@@ -313,7 +318,9 @@ const CheckoutPage = () => {
         delivery_address: {
           ...deliveryInfo,
           customer: customerInfo
-        }
+        },
+        // Add customer GPS location
+        customer_location: customerLocation
       };
       
       // Save to database FIRST - with fallback for guest orders
@@ -405,41 +412,6 @@ const CheckoutPage = () => {
     }
   };
 
-  // Start Stripe Checkout before placing order
-  const startStripeCheckout = async () => {
-    if (!validateStep(3)) return;
-    setPendingStripe(true);
-    setOrderError('');
-    try {
-      const items = cartState.items.map((ci) => ({
-        name: ci.product.name,
-        price: ci.product.price,
-        unitAmount: ci.product.price,
-        quantity: ci.quantity,
-      }));
-
-      const res = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          items,
-          customer: { email: customerInfo.email },
-          currency: 'inr',
-          metadata: { source: 'f1-mart' },
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to start checkout');
-      if (data.url) {
-        window.location.href = data.url as string;
-      }
-    } catch (e: any) {
-      setOrderError(e?.message || 'Unable to start payment');
-    } finally {
-      setPendingStripe(false);
-    }
-  };
 
   if (cartState.items.length === 0 && !orderPlaced) {
     return (
@@ -595,41 +567,6 @@ const CheckoutPage = () => {
             </div>
           )}
 
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg text-left">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Order Summary</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Payment Method:</span>
-                <span className="font-medium text-gray-900 dark:text-white">
-                  {paymentMethod === 'cod' ? 'Cash on Delivery' : 
-                   paymentMethod === 'card' ? 'Credit/Debit Card' : 'UPI Payment'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Total Amount:</span>
-                <span className="font-bold text-gray-900 dark:text-white">₹{total.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Estimated Delivery:</span>
-                <span className="font-medium text-gray-900 dark:text-white">
-                  {new Date(Date.now() + 24 * 60 * 60 * 1000).toLocaleDateString()}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {paymentMethod === 'cod' && (
-            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-              <div className="flex items-center space-x-2 mb-2">
-                <Banknote className="h-5 w-5 text-blue-600" />
-                <h4 className="font-semibold text-blue-900 dark:text-blue-100">Cash on Delivery</h4>
-              </div>
-              <p className="text-sm text-blue-700 dark:text-blue-300">
-                Please keep ₹{total.toFixed(2)} ready for payment when your order arrives. 
-                Our delivery partner will collect the payment upon delivery.
-              </p>
-            </div>
-          )}
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/products">
@@ -871,6 +808,15 @@ const CheckoutPage = () => {
                 </div>
 
                 <div className="space-y-4">
+                  {/* Customer Location Capture */}
+                  <CustomerLocationCapture 
+                    onLocationCaptured={(location) => {
+                      setCustomerLocation(location);
+                      console.log('📍 Customer location captured:', location);
+                    }}
+                    autoCapture={true}
+                  />
+                  
                   <div>
                     <Label htmlFor="address">Street Address</Label>
                     <Input
@@ -964,112 +910,61 @@ const CheckoutPage = () => {
                   </h2>
                 </div>
 
-                <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
-                  <div className="space-y-4">
-                    <div className={`flex items-center space-x-2 p-4 border rounded-lg cursor-pointer transition-colors ${
-                      paymentMethod === 'cod' ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-800'
-                    }`}>
-                      <RadioGroupItem value="cod" id="cod" />
-                      <Label htmlFor="cod" className="flex-1 cursor-pointer">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2">
-                            <Banknote className="h-5 w-5 text-emerald-600" />
-                            <span className="font-medium">Cash on Delivery</span>
-                          </div>
-                          <span className="text-sm text-emerald-600 font-semibold">Recommended</span>
-                        </div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                          Pay when your order arrives at your doorstep
-                        </p>
-                      </Label>
+                {/* Cash on Delivery Only */}
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2 p-4 border border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
+                    <div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center">
+                      <div className="w-2 h-2 bg-white rounded-full"></div>
                     </div>
-                    
-                    <div className={`flex items-center space-x-2 p-4 border rounded-lg cursor-pointer transition-colors ${
-                      paymentMethod === 'card' ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-800'
-                    }`}>
-                      <RadioGroupItem value="card" id="card" />
-                      <Label htmlFor="card" className="flex-1 cursor-pointer">
-                        <div className="flex items-center space-x-2">
-                          <CreditCard className="h-5 w-5" />
-                          <span>Credit/Debit Card</span>
-                        </div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                          Secure payment with your card
-                        </p>
-                      </Label>
-                    </div>
-                    
-                    <div className={`flex items-center space-x-2 p-4 border rounded-lg cursor-pointer transition-colors ${
-                      paymentMethod === 'upi' ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-800'
-                    }`}>
-                      <RadioGroupItem value="upi" id="upi" />
-                      <Label htmlFor="upi" className="flex-1 cursor-pointer">
-                        <div className="flex items-center space-x-2">
-                          <Smartphone className="h-5 w-5" />
-                          <span>UPI Payment</span>
-                        </div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                          Pay using UPI apps like PhonePe, Google Pay, Paytm
-                        </p>
-                      </Label>
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2">
+                        <Banknote className="h-5 w-5 text-emerald-600" />
+                        <span className="font-medium text-gray-900 dark:text-white">Cash on Delivery</span>
+                        <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs font-medium rounded-full">
+                          Only Option
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        Pay when your order arrives at your doorstep - No advance payment required
+                      </p>
                     </div>
                   </div>
-                </RadioGroup>
+                  
+                  {/* Coming Soon Notice */}
+                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                        <span className="text-white text-xs font-bold">!</span>
+                      </div>
+                      <div>
+                        <p className="font-medium text-blue-900 dark:text-blue-100">Online Payment Coming Soon</p>
+                        <p className="text-sm text-blue-700 dark:text-blue-300">
+                          We're working on adding card payments and UPI options. For now, we accept Cash on Delivery only.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-                {paymentMethod === 'card' && (
-                  <div className="mt-6 space-y-4">
-                    <div>
-                      <Label htmlFor="cardNumber">Card Number</Label>
-                      <Input id="cardNumber" placeholder="1234 5678 9012 3456" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="expiry">Expiry Date</Label>
-                        <Input id="expiry" placeholder="MM/YY" />
-                      </div>
-                      <div>
-                        <Label htmlFor="cvv">CVV</Label>
-                        <Input id="cvv" placeholder="123" />
-                      </div>
-                    </div>
-                  </div>
-                )}
 
                 <div className="flex space-x-4 mt-6">
                   <Button variant="outline" onClick={() => setCurrentStep(2)}>
                     Back
                   </Button>
-                  {paymentMethod === 'cod' ? (
-                    <Button 
-                      onClick={handlePlaceOrder}
-                      disabled={isProcessing}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white flex-1 disabled:opacity-50"
-                    >
-                      {isProcessing ? (
-                        <div className="flex items-center space-x-2">
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          <span>Placing Order...</span>
-                        </div>
-                      ) : (
-                        `Place Order (₹${total.toFixed(2)})`
-                      )}
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={startStripeCheckout}
-                      disabled={pendingStripe}
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white flex-1 disabled:opacity-50"
-                    >
-                      {pendingStripe ? (
-                        <div className="flex items-center space-x-2">
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          <span>Redirecting to Payment...</span>
-                        </div>
-                      ) : (
-                        `Pay Securely (₹${total.toFixed(2)})`
-                      )}
-                    </Button>
-                  )}
+                  <Button 
+                    onClick={handlePlaceOrder}
+                    disabled={isProcessing}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white flex-1 disabled:opacity-50"
+                  >
+                    {isProcessing ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Placing Order...</span>
+                      </div>
+                    ) : (
+                      `Place Order - Cash on Delivery (₹${total.toFixed(2)})`
+                    )}
+                  </Button>
                 </div>
               </Card>
             )}

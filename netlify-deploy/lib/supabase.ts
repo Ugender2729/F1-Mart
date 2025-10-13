@@ -8,8 +8,19 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
-    // Disable email verification
-    flowType: 'implicit'
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+    storageKey: 'supabase.auth.token',
+    debug: false // Disable debug to reduce warnings
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 2 // Limit realtime events to reduce load
+    }
+  },
+  global: {
+    headers: {
+      'X-Client-Info': 'f1-mart-web'
+    }
   }
 })
 

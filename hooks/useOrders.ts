@@ -19,6 +19,16 @@ export interface Order {
   status: string;
   payment_method: string;
   delivery_address: any;
+  order_type?: 'regular' | 'food_delivery'; // New field to distinguish order types
+  customer_location?: {
+    latitude: number;
+    longitude: number;
+    accuracy: number;
+    distance: number;
+    isWithinRange: boolean;
+    timestamp: string;
+    address?: string;
+  };
   deliveryInfo?: any; // For localStorage orders
   orderDate?: string; // For localStorage orders
   created_at: string;
@@ -31,7 +41,7 @@ export interface Order {
   };
 }
 
-export function useOrders() {
+export function useOrders(orderType?: 'regular' | 'food_delivery') {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,12 +69,19 @@ export function useOrders() {
         return;
       }
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('orders')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', user.id);
+
+      // Filter by order type if specified
+      if (orderType) {
+        query = query.eq('order_type', orderType);
+      }
+
+      const { data, error } = await query
         .order('created_at', { ascending: false })
-        .limit(5);
+        .limit(10); // Increased limit to show more recent orders
 
       if (error) throw error;
 
@@ -143,7 +160,7 @@ export function useOrders() {
 }
 
 // Hook for admin to fetch all orders
-export function useAllOrders() {
+export function useAllOrders(orderType?: 'regular' | 'food_delivery') {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -155,24 +172,38 @@ export function useAllOrders() {
 
       let dbOrders: any[] = [];
 
-      // First try to fetch orders with user data
-      const { data: ordersWithUsers, error: userError } = await supabase
+      let query = supabase
         .from('orders')
         .select(`
           *,
           users(email, first_name, last_name)
-        `)
+        `);
+
+      // Filter by order type if specified
+      if (orderType) {
+        query = query.eq('order_type', orderType);
+      }
+
+      // First try to fetch orders with user data
+      const { data: ordersWithUsers, error: userError } = await query
         .order('created_at', { ascending: false })
-        .limit(5);
+        .limit(20); // Increased limit to show more orders
 
       if (userError) {
         console.warn('Error fetching orders with users:', userError);
         // Fallback: fetch orders without user data
-        const { data: ordersOnly, error: ordersError } = await supabase
+        let fallbackQuery = supabase
           .from('orders')
-          .select('*')
+          .select('*');
+
+        // Filter by order type if specified
+        if (orderType) {
+          fallbackQuery = fallbackQuery.eq('order_type', orderType);
+        }
+
+        const { data: ordersOnly, error: ordersError } = await fallbackQuery
           .order('created_at', { ascending: false })
-          .limit(5);
+          .limit(20);
 
         if (ordersError) {
           console.warn('Error fetching orders without users:', ordersError);
@@ -200,7 +231,7 @@ export function useAllOrders() {
     } finally {
       setLoading(false);
     }
-  }, []); // Empty dependency array since we don't depend on any external values
+  }, [orderType]); // Include orderType in dependencies
 
   // Helper function to get orders from localStorage
   const getLocalStorageOrders = useCallback(() => {

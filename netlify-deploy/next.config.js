@@ -10,10 +10,8 @@ const nextConfig = {
     unoptimized: true,
     domains: ['images.unsplash.com', 'via.placeholder.com']
   },
-  output: 'export',
+  // Removed export config for Netlify server-side rendering
   trailingSlash: true,
-  skipTrailingSlashRedirect: true,
-  distDir: 'out',
   webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,

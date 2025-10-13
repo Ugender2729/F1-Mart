@@ -3,9 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Star, Clock, Truck, Gift } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 const OfferCards = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const router = useRouter();
 
   const offers = [
     {
@@ -19,7 +22,8 @@ const OfferCards = () => {
       image: "https://images.pexels.com/photos/2872755/pexels-photo-2872755.jpeg?auto=compress&cs=tinysrgb&w=600",
       icon: <Star className="h-6 w-6" />,
       color: "from-red-500 to-pink-500",
-      bgColor: "bg-gradient-to-br from-red-500 to-pink-500"
+      bgColor: "bg-gradient-to-br from-red-500 to-pink-500",
+      link: "/products?category=Fruits & Vegetables&on_sale=true"
     },
     {
       id: 2,
@@ -32,7 +36,8 @@ const OfferCards = () => {
       image: "https://images.pexels.com/photos/416656/pexels-photo-416656.jpeg?auto=compress&cs=tinysrgb&w=600",
       icon: <Truck className="h-6 w-6" />,
       color: "from-blue-500 to-cyan-500",
-      bgColor: "bg-gradient-to-br from-blue-500 to-cyan-500"
+      bgColor: "bg-gradient-to-br from-blue-500 to-cyan-500",
+      link: "/products"
     },
     {
       id: 3,
@@ -45,7 +50,8 @@ const OfferCards = () => {
       image: "https://images.pexels.com/photos/1295572/pexels-photo-1295572.jpeg?auto=compress&cs=tinysrgb&w=600",
       icon: <Gift className="h-6 w-6" />,
       color: "from-green-500 to-emerald-500",
-      bgColor: "bg-gradient-to-br from-green-500 to-emerald-500"
+      bgColor: "bg-gradient-to-br from-green-500 to-emerald-500",
+      link: "/auth"
     },
     {
       id: 4,
@@ -58,7 +64,8 @@ const OfferCards = () => {
       image: "https://images.pexels.com/photos/47347/broccoli-vegetable-food-healthy-47347.jpeg?auto=compress&cs=tinysrgb&w=600",
       icon: <Clock className="h-6 w-6" />,
       color: "from-purple-500 to-indigo-500",
-      bgColor: "bg-gradient-to-br from-purple-500 to-indigo-500"
+      bgColor: "bg-gradient-to-br from-purple-500 to-indigo-500",
+      link: "/products?on_sale=true"
     }
   ];
 
@@ -104,47 +111,49 @@ const OfferCards = () => {
             >
               {offers.map((offer) => (
                 <div key={offer.id} className="w-full flex-shrink-0">
-                  <div className={`relative h-80 ${offer.bgColor} overflow-hidden`}>
+                  <div className={`relative min-h-[400px] md:h-96 ${offer.bgColor} overflow-hidden`}>
                     {/* Background Pattern */}
                     <div className="absolute inset-0 opacity-10">
                       <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full -translate-y-48 translate-x-48"></div>
                       <div className="absolute bottom-0 left-0 w-64 h-64 bg-white rounded-full translate-y-32 -translate-x-32"></div>
                     </div>
 
-                    <div className="relative z-10 h-full flex items-center">
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full px-8">
+                    <div className="relative z-10 h-full flex items-center py-8 md:py-0">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full px-6 md:px-8">
                         {/* Content */}
                         <div className="flex flex-col justify-center text-white">
                           <div className="flex items-center space-x-3 mb-4">
-                            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
+                            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-2 md:p-3">
                               {offer.icon}
                             </div>
                             <div>
-                              <h3 className="text-2xl font-bold">{offer.title}</h3>
-                              <p className="text-lg opacity-90">{offer.subtitle}</p>
+                              <h3 className="text-xl md:text-2xl font-bold">{offer.title}</h3>
+                              <p className="text-base md:text-lg opacity-90">{offer.subtitle}</p>
                             </div>
                           </div>
                           
-                          <p className="text-lg mb-6 opacity-90 leading-relaxed">
+                          <p className="text-base md:text-lg mb-4 md:mb-6 opacity-90 leading-relaxed">
                             {offer.description}
                           </p>
 
-                          <div className="flex items-center space-x-4 mb-6">
-                            <div className="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2">
-                              <span className="text-2xl font-bold">{offer.discount}</span>
+                          <div className="flex items-center space-x-4 mb-4 md:mb-6">
+                            <div className="bg-white/20 backdrop-blur-sm rounded-xl px-3 md:px-4 py-2">
+                              <span className="text-xl md:text-2xl font-bold">{offer.discount}</span>
                             </div>
                             <div className="text-sm">
                               <div className="line-through opacity-70">{offer.originalPrice}</div>
-                              <div className="text-xl font-bold">{offer.newPrice}</div>
+                              <div className="text-lg md:text-xl font-bold">{offer.newPrice}</div>
                             </div>
                           </div>
 
-                          <Button 
-                            size="lg" 
-                            className="bg-white text-gray-900 hover:bg-gray-100 font-semibold px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 w-fit"
-                          >
-                            Shop Now
-                          </Button>
+                          <Link href={offer.link}>
+                            <Button 
+                              size="lg" 
+                              className="bg-white text-gray-900 hover:bg-gray-100 font-semibold px-6 md:px-8 py-2.5 md:py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-sm md:text-base"
+                            >
+                              Shop Now
+                            </Button>
+                          </Link>
                         </div>
 
                         {/* Image */}

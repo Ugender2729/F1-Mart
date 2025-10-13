@@ -51,7 +51,7 @@ const FAQPage = () => {
         },
         {
           question: 'Is there a minimum order amount?',
-          answer: 'There\'s no minimum order amount, but orders under ₹2000 incur a delivery fee of ₹415. Orders over ₹2000 qualify for free delivery.'
+          answer: 'There\'s no minimum order amount, but orders under ₹500 incur a delivery fee of ₹50. Orders over ₹500 qualify for free delivery.'
         }
       ]
     },

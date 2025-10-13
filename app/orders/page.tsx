@@ -6,13 +6,15 @@ import { useOrders } from '@/hooks/useOrders';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Package, Clock, CheckCircle, Truck, User, ArrowLeft } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Package, Clock, CheckCircle, Truck, User, ArrowLeft, Filter } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 const OrdersPage = () => {
   const { user } = useAuth();
-  const { orders, loading, error, fetchOrders } = useOrders();
+  const [orderTypeFilter, setOrderTypeFilter] = useState<'regular' | 'food_delivery' | 'all'>('all');
+  const { orders, loading, error, fetchOrders } = useOrders(orderTypeFilter === 'all' ? undefined : orderTypeFilter);
   const [localStorageOrders, setLocalStorageOrders] = useState<any[]>([]);
   const router = useRouter();
 
@@ -110,21 +112,37 @@ const OrdersPage = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-8 gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
                 Order History
               </h1>
               <p className="text-gray-600 dark:text-gray-400">
-                Track your orders and view order details
+                Track your orders and view order details - Recent orders appear first
               </p>
             </div>
-            <Link href="/products">
-              <Button variant="outline" className="flex items-center">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Continue Shopping
-              </Button>
-            </Link>
+            <div className="flex items-center gap-4">
+              {/* Order Type Filter */}
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-gray-500" />
+                <Select value={orderTypeFilter} onValueChange={(value: 'regular' | 'food_delivery' | 'all') => setOrderTypeFilter(value)}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Filter by type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Orders</SelectItem>
+                    <SelectItem value="regular">Regular Orders</SelectItem>
+                    <SelectItem value="food_delivery">Food Delivery</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Link href="/products">
+                <Button variant="outline" className="flex items-center">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Continue Shopping
+                </Button>
+              </Link>
+            </div>
           </div>
 
           {/* Orders List */}
@@ -186,6 +204,13 @@ const OrdersPage = () => {
                               minute: '2-digit'
                             })}
                           </CardDescription>
+                          {order.order_type && (
+                            <div className="mt-1">
+                              <Badge variant="outline" className="text-xs">
+                                {order.order_type === 'food_delivery' ? '🍕 Food Delivery' : '📦 Regular Order'}
+                              </Badge>
+                            </div>
+                          )}
                         </div>
                         <div className="text-right">
                           <p className="text-2xl font-bold text-gray-900 dark:text-white">

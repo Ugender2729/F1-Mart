@@ -4,8 +4,8 @@ import React, { createContext, useContext, useEffect, useState } from 'react'
 import { User, Session, AuthError } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 
-// Feature flag: explicitly enable email-based auth only when set to 'true'
-const EMAIL_AUTH_ENABLED = process.env.NEXT_PUBLIC_ENABLE_EMAIL_AUTH === 'true'
+// Feature flag: enable email-based auth (mobile number authentication)
+const EMAIL_AUTH_ENABLED = true // Always enabled for mobile authentication
 
 interface AuthContextType {
   user: User | null

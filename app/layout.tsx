@@ -1,23 +1,47 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
-import { CartProvider } from '@/context/CartContext';
-import { WishlistProvider } from '@/context/WishlistContext';
-import { ThemeProvider } from '@/context/ThemeContext';
-import { AuthProvider } from '@/context/AuthContext';
-import { FoodCartProvider } from '@/context/FoodCartContext';
-import { Toaster } from '@/components/ui/sonner';
-import ErrorBoundary from '@/components/ErrorBoundary';
-import { PerformanceMonitor } from '@/components/PerformanceMonitor';
-import WhatsAppButton from '@/components/WhatsAppButton';
+import dynamic from 'next/dynamic';
+import AppProviders from '@/components/providers/AppProviders';
+
+// Lazy load heavy components
+const Header = dynamic(() => import('@/components/layout/Header'), {
+  ssr: true,
+  loading: () => <div className="h-16 bg-white dark:bg-gray-900 animate-pulse" />
+});
+
+const Footer = dynamic(() => import('@/components/layout/Footer'), {
+  ssr: true,
+  loading: () => <div className="h-32 bg-gray-100 dark:bg-gray-800 animate-pulse" />
+});
+
+const Toaster = dynamic(() => import('@/components/ui/sonner').then(mod => ({ default: mod.Toaster })), {
+  ssr: false
+});
+
+// Temporarily disabled for performance optimization
+// const PerformanceMonitor = dynamic(() => import('@/components/PerformanceMonitor'), {
+//   ssr: false
+// });
+
+const WhatsAppButton = dynamic(() => import('@/components/WhatsAppButton'), {
+  ssr: false
+});
+
+const ErrorBoundary = dynamic(() => import('@/components/ErrorBoundary'), {
+  ssr: false
+});
 
 export const metadata: Metadata = {
   title: 'F1 Mart - Fresh and Fast Delivery',
   description: 'Get farm-fresh groceries delivered to your doorstep. Quality ingredients, competitive prices, fresh and fast delivery.',
   keywords: 'grocery, fresh food, delivery, organic, vegetables, fruits, meat, dairy, F1 Mart',
   authors: [{ name: 'F1 Mart Team' }],
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://f1mart.com'),
+  metadataBase: new URL('https://f1mart.com'),
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
+  },
   openGraph: {
     title: 'F1 Mart - Fresh and Fast Delivery',
     description: 'Get farm-fresh groceries delivered to your doorstep with fresh and fast delivery',
@@ -55,26 +79,18 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className="font-sans">
         <ErrorBoundary>
-          <ThemeProvider>
-            <AuthProvider>
-              <CartProvider>
-                <WishlistProvider>
-                  <FoodCartProvider>
-                    <div className="flex flex-col min-h-screen">
-                      <Header />
-                      <main className="flex-1">
-                        {children}
-                      </main>
-                      <Footer />
-                    </div>
-                    <Toaster />
-                    <PerformanceMonitor />
-                    <WhatsAppButton />
-                  </FoodCartProvider>
-                </WishlistProvider>
-              </CartProvider>
-            </AuthProvider>
-          </ThemeProvider>
+          <AppProviders>
+            <div className="flex flex-col min-h-screen">
+              <Header />
+              <main className="flex-1">
+                {children}
+              </main>
+              <Footer />
+            </div>
+            <Toaster />
+            {/* <PerformanceMonitor /> */}
+            <WhatsAppButton />
+          </AppProviders>
         </ErrorBoundary>
       </body>
     </html>

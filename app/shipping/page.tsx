@@ -181,7 +181,7 @@ const ShippingPage = () => {
                 </div>
                 <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                   <span className="text-gray-900 dark:text-white font-medium">Orders under ₹2000</span>
-                  <span className="text-gray-600 dark:text-gray-300">₹415</span>
+                  <span className="text-gray-600 dark:text-gray-300">₹50</span>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                   <span className="text-gray-900 dark:text-white font-medium">Same-day delivery</span>

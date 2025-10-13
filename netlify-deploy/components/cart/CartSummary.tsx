@@ -74,9 +74,9 @@ const CartSummary: React.FC<CartSummaryProps> = ({ subtotal, onCheckout }) => {
   };
 
   const discountInfo = getDiscountInfo(subtotal);
-  const deliveryFee = subtotal >= 500 ? 0 : 415;
+  const deliveryFee = subtotal >= 500 ? 0 : 50;
   const couponDiscount = discountInfo?.type === 'coupon' ? discountInfo.amount : 0;
-  const tax = (subtotal - couponDiscount) * 0.08; // 8% tax on discounted amount
+  const tax = (subtotal - couponDiscount) * 0.18; // 18% GST on discounted amount
   const total = subtotal - couponDiscount + deliveryFee + tax;
 
   return (

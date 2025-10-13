@@ -76,9 +76,9 @@ const CheckoutPage = () => {
   };
 
   const discountInfo = getDiscountInfo(cartState.total);
-  const deliveryFee = cartState.total >= 500 ? 0 : 415;
+  const deliveryFee = cartState.total >= 500 ? 0 : 50;
   const couponDiscount = discountInfo?.type === 'coupon' ? discountInfo.amount : 0;
-  const tax = (cartState.total - couponDiscount) * 0.08; // 8% tax on discounted amount
+  const tax = (cartState.total - couponDiscount) * 0.18; // 18% GST on discounted amount
   const total = cartState.total - couponDiscount + deliveryFee + tax;
 
   // Generate unique order ID
@@ -425,41 +425,6 @@ const CheckoutPage = () => {
             </div>
           )}
 
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg text-left">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Order Summary</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Payment Method:</span>
-                <span className="font-medium text-gray-900 dark:text-white">
-                  {paymentMethod === 'cod' ? 'Cash on Delivery' : 
-                   paymentMethod === 'card' ? 'Credit/Debit Card' : 'UPI Payment'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Total Amount:</span>
-                <span className="font-bold text-gray-900 dark:text-white">₹{total.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Estimated Delivery:</span>
-                <span className="font-medium text-gray-900 dark:text-white">
-                  {new Date(Date.now() + 24 * 60 * 60 * 1000).toLocaleDateString()}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {paymentMethod === 'cod' && (
-            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-              <div className="flex items-center space-x-2 mb-2">
-                <Banknote className="h-5 w-5 text-blue-600" />
-                <h4 className="font-semibold text-blue-900 dark:text-blue-100">Cash on Delivery</h4>
-              </div>
-              <p className="text-sm text-blue-700 dark:text-blue-300">
-                Please keep ₹{total.toFixed(2)} ready for payment when your order arrives. 
-                Our delivery partner will collect the payment upon delivery.
-              </p>
-            </div>
-          )}
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/products">
@@ -736,76 +701,42 @@ const CheckoutPage = () => {
                   </h2>
                 </div>
 
-                <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
-                  <div className="space-y-4">
-                    <div className={`flex items-center space-x-2 p-4 border rounded-lg cursor-pointer transition-colors ${
-                      paymentMethod === 'cod' ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-800'
-                    }`}>
-                      <RadioGroupItem value="cod" id="cod" />
-                      <Label htmlFor="cod" className="flex-1 cursor-pointer">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2">
-                            <Banknote className="h-5 w-5 text-emerald-600" />
-                            <span className="font-medium">Cash on Delivery</span>
-                          </div>
-                          <span className="text-sm text-emerald-600 font-semibold">Recommended</span>
-                        </div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                          Pay when your order arrives at your doorstep
-                        </p>
-                      </Label>
+                {/* Cash on Delivery Only */}
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2 p-4 border border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
+                    <div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center">
+                      <div className="w-2 h-2 bg-white rounded-full"></div>
                     </div>
-                    
-                    <div className={`flex items-center space-x-2 p-4 border rounded-lg cursor-pointer transition-colors ${
-                      paymentMethod === 'card' ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-800'
-                    }`}>
-                      <RadioGroupItem value="card" id="card" />
-                      <Label htmlFor="card" className="flex-1 cursor-pointer">
-                        <div className="flex items-center space-x-2">
-                          <CreditCard className="h-5 w-5" />
-                          <span>Credit/Debit Card</span>
-                        </div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                          Secure payment with your card
-                        </p>
-                      </Label>
-                    </div>
-                    
-                    <div className={`flex items-center space-x-2 p-4 border rounded-lg cursor-pointer transition-colors ${
-                      paymentMethod === 'upi' ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-800'
-                    }`}>
-                      <RadioGroupItem value="upi" id="upi" />
-                      <Label htmlFor="upi" className="flex-1 cursor-pointer">
-                        <div className="flex items-center space-x-2">
-                          <Smartphone className="h-5 w-5" />
-                          <span>UPI Payment</span>
-                        </div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                          Pay using UPI apps like PhonePe, Google Pay, Paytm
-                        </p>
-                      </Label>
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2">
+                        <Banknote className="h-5 w-5 text-emerald-600" />
+                        <span className="font-medium text-gray-900 dark:text-white">Cash on Delivery</span>
+                        <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs font-medium rounded-full">
+                          Only Option
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        Pay when your order arrives at your doorstep - No advance payment required
+                      </p>
                     </div>
                   </div>
-                </RadioGroup>
+                  
+                  {/* Coming Soon Notice */}
+                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                        <span className="text-white text-xs font-bold">!</span>
+                      </div>
+                      <div>
+                        <p className="font-medium text-blue-900 dark:text-blue-100">Online Payment Coming Soon</p>
+                        <p className="text-sm text-blue-700 dark:text-blue-300">
+                          We're working on adding card payments and UPI options. For now, we accept Cash on Delivery only.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-                {paymentMethod === 'card' && (
-                  <div className="mt-6 space-y-4">
-                    <div>
-                      <Label htmlFor="cardNumber">Card Number</Label>
-                      <Input id="cardNumber" placeholder="1234 5678 9012 3456" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="expiry">Expiry Date</Label>
-                        <Input id="expiry" placeholder="MM/YY" />
-                      </div>
-                      <div>
-                        <Label htmlFor="cvv">CVV</Label>
-                        <Input id="cvv" placeholder="123" />
-                      </div>
-                    </div>
-                  </div>
-                )}
 
                 <div className="flex space-x-4 mt-6">
                   <Button variant="outline" onClick={() => setCurrentStep(2)}>
@@ -822,7 +753,7 @@ const CheckoutPage = () => {
                         <span>Placing Order...</span>
                       </div>
                     ) : (
-                      `Place Order (₹${total.toFixed(2)})`
+                      `Place Order - Cash on Delivery (₹${total.toFixed(2)})`
                     )}
                   </Button>
                 </div>

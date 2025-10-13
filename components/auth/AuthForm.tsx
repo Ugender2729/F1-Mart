@@ -96,14 +96,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
         return;
       }
       
-      if (!emailAuthEnabled) {
-        setError('Sign in via mobile/OTP is coming soon. Email logins are disabled.');
-        toast.info('Authentication disabled', { description: 'Email/password sign in is disabled for now.' });
-        setLoading(false);
-        return;
-      }
-
-      // Handle user sign in with generated credentials (only if enabled)
+      // Handle user sign in with generated credentials
+      console.log('Attempting sign in with:', { email, passwordLength: password.length });
       const { error } = await signIn(email, password);
       
       if (error) {
@@ -151,7 +145,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
           Sign In
         </CardTitle>
         <CardDescription className="text-indigo-100">
-          {emailAuthEnabled ? 'Sign in with your mobile number' : 'Email/password sign in is disabled'}
+          Sign in with your mobile number
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -169,7 +163,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
                 onChange={handleChange}
                 className="pl-10"
                 required
-                disabled={!emailAuthEnabled}
               />
             </div>
             <p className="text-xs text-gray-500">
@@ -188,7 +181,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
                 value={formData.password}
                 onChange={handleChange}
                 required
-                disabled={!emailAuthEnabled}
               />
               <Button
                 type="button"
@@ -221,7 +213,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
             </div>
           )}
 
-          <Button type="submit" className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white shadow-lg" disabled={loading || !emailAuthEnabled}>
+          <Button type="submit" className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white shadow-lg" disabled={loading}>
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

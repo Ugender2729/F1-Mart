@@ -39,24 +39,53 @@ const nextConfig = {
       ...config.resolve.alias,
     };
 
-    // Optimize bundle splitting
+    // Optimize bundle splitting for better performance
     if (!dev && !isServer) {
       config.optimization.splitChunks = {
         chunks: 'all',
+        maxInitialRequests: 25,
+        minSize: 20000,
         cacheGroups: {
+          default: {
+            minChunks: 2,
+            priority: -20,
+            reuseExistingChunk: true,
+          },
           vendor: {
             test: /[\\/]node_modules[\\/]/,
             name: 'vendors',
+            priority: -10,
             chunks: 'all',
           },
-          common: {
-            name: 'common',
-            minChunks: 2,
+          // Separate Supabase bundle
+          supabase: {
+            test: /[\\/]node_modules[\\/]@supabase[\\/]/,
+            name: 'supabase',
+            priority: 10,
             chunks: 'all',
-            enforce: true,
+          },
+          // Separate UI components bundle
+          ui: {
+            test: /[\\/]node_modules[\\/]@radix-ui[\\/]/,
+            name: 'ui',
+            priority: 10,
+            chunks: 'all',
+          },
+          // Separate React bundle
+          react: {
+            test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
+            name: 'react',
+            priority: 20,
+            chunks: 'all',
           },
         },
       };
+    }
+
+    // Optimize for production
+    if (!dev) {
+      config.optimization.usedExports = true;
+      config.optimization.sideEffects = false;
     }
 
     return config;

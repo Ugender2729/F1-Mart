@@ -297,23 +297,23 @@ const Header = () => {
         </div>
 
         {/* Mobile Search */}
-        <div className="md:hidden py-4 px-2">
-          <form onSubmit={handleSearch} className="relative">
-            <div className="relative flex items-center">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-white/80 z-10" />
+        <div className="md:hidden pb-3 px-1">
+          <form onSubmit={handleSearch} className="w-full">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
               <Input
-                type="text"
-                placeholder="Search groceries..."
+                type="search"
+                placeholder="Search products..."
                 value={searchQuery}
                 onChange={handleSearchInputChange}
-                className="pl-12 pr-24 py-3 w-full bg-white/20 backdrop-blur-sm border border-white/30 text-white placeholder-white/70 focus:bg-white/30 focus:border-white/50 rounded-full shadow-lg text-base"
+                className="w-full h-10 pl-10 pr-20 bg-white text-gray-900 placeholder-gray-500 border-0 rounded-lg shadow-md focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm"
               />
               <Button
                 type="submit"
                 size="sm"
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white px-4 py-2 text-sm font-semibold rounded-full shadow-md transition-all duration-300"
+                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white px-3 text-xs font-bold rounded-md shadow-sm transition-all duration-200"
               >
-                Go
+                Search
               </Button>
             </div>
           </form>

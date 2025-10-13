@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useProducts, useCategories } from '@/hooks/useSupabase';
 import { useAllOrders } from '@/hooks/useOrders';
+import { useAllFoodOrders } from '@/hooks/useFoodOrders';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import AddProductForm from './AddProductForm';
@@ -13,6 +14,7 @@ import { StockManagement } from './StockManagement';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { 
   Package, 
   Users, 
@@ -24,7 +26,10 @@ import {
   LogOut,
   Phone,
   Mail,
-  AlertTriangle
+  AlertTriangle,
+  RefreshCw,
+  Activity,
+  MapPin
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -37,7 +42,8 @@ const AdminDashboard = () => {
   const [editingCategory, setEditingCategory] = useState<any>(null);
   const { products, loading: productsLoading, refetch: refetchProducts } = useProducts();
   const { categories, loading: categoriesLoading, refetch: refetchCategories } = useCategories();
-  const { orders, loading: ordersLoading, error: ordersError, updateOrderStatus, refetch: refetchOrders } = useAllOrders();
+  const { orders, loading: ordersLoading, error: ordersError, updateOrderStatus, refetch: refetchOrders } = useAllOrders('regular');
+  const { orders: foodOrders, loading: foodOrdersLoading, error: foodOrdersError, updateFoodOrderStatus, refetch: refetchFoodOrders } = useAllFoodOrders();
   const router = useRouter();
 
   useEffect(() => {
@@ -56,6 +62,25 @@ const AdminDashboard = () => {
       refetchOrders();
     }
   }, [admin]); // Remove refetchOrders from dependencies to prevent re-runs
+
+  // Auto-refresh data every 2 minutes for better performance
+  useEffect(() => {
+    if (!admin) return; // Only refresh if admin is logged in
+    
+    const interval = setInterval(() => {
+      console.log('🔄 Auto-refreshing admin dashboard data...');
+      // Only refresh orders and food orders (most important data)
+      refetchOrders();
+      refetchFoodOrders();
+      // Refresh products and categories less frequently
+      if (Math.random() < 0.5) { // 50% chance
+        refetchProducts();
+        refetchCategories();
+      }
+    }, 120000); // Refresh every 2 minutes instead of 30 seconds
+
+    return () => clearInterval(interval);
+  }, [admin, refetchProducts, refetchCategories, refetchOrders, refetchFoodOrders]);
 
   const handleSignOut = () => {
     localStorage.removeItem('admin');
@@ -205,6 +230,26 @@ const AdminDashboard = () => {
     );
   }
 
+  // Calculate real-time statistics
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const todayOrders = orders.filter(order => {
+    const orderDate = new Date(order.created_at || order.orderDate || '');
+    return orderDate >= today;
+  });
+  
+  const todayFoodOrders = foodOrders.filter(order => {
+    const orderDate = new Date(order.created_at || '');
+    return orderDate >= today;
+  });
+  
+  const allTodayOrders = [...todayOrders, ...todayFoodOrders];
+  
+  const totalRevenue = allTodayOrders.reduce((sum, order) => {
+    return sum + (order.total || 0);
+  }, 0);
+  
   const stats = [
     {
       title: 'Total Products',
@@ -226,7 +271,7 @@ const AdminDashboard = () => {
     },
     {
       title: 'Orders Today',
-      value: orders.length.toString(),
+      value: allTodayOrders.length.toString(),
       icon: ShoppingCart,
       iconColor: 'text-purple-600',
       valueColor: 'text-purple-600',
@@ -234,8 +279,8 @@ const AdminDashboard = () => {
       shadowColor: 'shadow-purple-500/25'
     },
     {
-      title: 'Revenue',
-      value: '₹45,230',
+      title: 'Revenue Today',
+      value: `₹${totalRevenue.toLocaleString('en-IN')}`,
       icon: TrendingUp,
       iconColor: 'text-orange-600',
       valueColor: 'text-orange-600',
@@ -252,12 +297,36 @@ const AdminDashboard = () => {
           <div className="flex justify-between items-center h-16">
             <div>
               <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
-              <p className="text-sm text-gray-300">Welcome back, {admin.email}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm text-gray-300">Welcome back, {admin.email}</p>
+                <div className="flex items-center gap-1 text-xs text-green-400">
+                  <Activity className="h-3 w-3" />
+                  <span>Live</span>
+                </div>
+              </div>
             </div>
-            <Button onClick={handleSignOut} variant="outline" className="bg-gray-800 border-gray-700 text-white hover:bg-gray-700">
-              <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                onClick={() => {
+                  console.log('🔄 Manual refresh triggered');
+                  refetchProducts();
+                  refetchCategories();
+                  refetchOrders();
+                  refetchFoodOrders();
+                  toast.success('Dashboard refreshed!');
+                }}
+                variant="outline" 
+                size="sm"
+                className="bg-gray-800 border-gray-700 text-white hover:bg-gray-700"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh
+              </Button>
+              <Button onClick={handleSignOut} variant="outline" className="bg-gray-800 border-gray-700 text-white hover:bg-gray-700">
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -265,30 +334,53 @@ const AdminDashboard = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat, index) => (
-            <Card key={index} className="border border-gray-800 bg-gray-900 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-              <CardContent className="p-6">
-                <div className="flex items-center">
-                  <div className={`p-4 rounded-2xl ${stat.bgColor} ${stat.shadowColor} shadow-lg`}>
-                    <stat.icon className={`h-8 w-8 text-white`} />
+          {stats.map((stat, index) => {
+            const isLoading = 
+              (index === 0 && productsLoading) || 
+              (index === 1 && categoriesLoading) || 
+              (index === 2 && (ordersLoading || foodOrdersLoading)) || 
+              (index === 3 && (ordersLoading || foodOrdersLoading));
+            
+            return (
+              <Card key={index} className="border border-gray-800 bg-gray-900 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                <CardContent className="p-6">
+                  <div className="flex items-center">
+                    <div className={`p-4 rounded-2xl ${stat.bgColor} ${stat.shadowColor} shadow-lg`}>
+                      <stat.icon className={`h-8 w-8 text-white`} />
+                    </div>
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-300">{stat.title}</p>
+                      <div className="flex items-center gap-2">
+                        <p className={`text-3xl font-bold ${stat.valueColor}`}>
+                          {isLoading ? (
+                            <RefreshCw className="h-6 w-6 animate-spin" />
+                          ) : (
+                            stat.value
+                          )}
+                        </p>
+                        {isLoading && (
+                          <div className="flex items-center gap-1 text-xs text-blue-400">
+                            <Activity className="h-3 w-3 animate-pulse" />
+                            <span>Updating...</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-300">{stat.title}</p>
-                    <p className={`text-3xl font-bold ${stat.valueColor}`}>{stat.value}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
         {/* Main Content */}
         <Tabs defaultValue="orders" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 bg-gray-900 shadow-lg border border-gray-800">
+          <TabsList className="grid w-full grid-cols-5 bg-gray-900 shadow-lg border border-gray-800">
             <TabsTrigger value="products" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white text-gray-300 hover:text-white">Products</TabsTrigger>
             <TabsTrigger value="categories" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white text-gray-300 hover:text-white">Categories</TabsTrigger>
             <TabsTrigger value="stock" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-orange-600 data-[state=active]:text-white text-gray-300 hover:text-white">Stock</TabsTrigger>
             <TabsTrigger value="orders" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-purple-600 data-[state=active]:text-white text-gray-300 hover:text-white">Orders</TabsTrigger>
+            <TabsTrigger value="food-orders" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-red-500 data-[state=active]:to-red-600 data-[state=active]:text-white text-gray-300 hover:text-white">Food Orders</TabsTrigger>
           </TabsList>
 
           {/* Products Tab */}
@@ -619,6 +711,44 @@ const AdminDashboard = () => {
                                     <span className="font-medium">Landmark:</span> {order.delivery_address?.landmark || (order as any).deliveryInfo?.landmark}
                                   </p>
                                 ) : null}
+                                
+                                {/* Customer GPS Location */}
+                                {order.customer_location && (
+                                  <div className="mt-3 p-2 bg-gradient-to-r from-blue-900/40 to-purple-900/40 rounded-lg border border-blue-700">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <MapPin className="h-4 w-4 text-blue-400" />
+                                      <span className="font-medium text-blue-300 text-xs">GPS Location</span>
+                                      <Badge className={`ml-auto ${
+                                        order.customer_location.isWithinRange
+                                          ? 'bg-green-900 text-green-300'
+                                          : 'bg-red-900 text-red-300'
+                                      }`}>
+                                        {order.customer_location.distance.toFixed(2)}km
+                                        {order.customer_location.isWithinRange ? ' (Telangana)' : ' (Outside)'}
+                                      </Badge>
+                                    </div>
+                                    <div className="space-y-1">
+                                      <p className="text-xs text-gray-400">
+                                        <span className="font-medium">Lat:</span> {order.customer_location.latitude.toFixed(6)}°
+                                      </p>
+                                      <p className="text-xs text-gray-400">
+                                        <span className="font-medium">Lng:</span> {order.customer_location.longitude.toFixed(6)}°
+                                      </p>
+                                      <p className="text-xs text-gray-400">
+                                        <span className="font-medium">Accuracy:</span> ±{Math.round(order.customer_location.accuracy)}m
+                                      </p>
+                                      <a
+                                        href={`https://www.google.com/maps?q=${order.customer_location.latitude},${order.customer_location.longitude}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 underline mt-1"
+                                      >
+                                        <MapPin className="h-3 w-3" />
+                                        Open in Google Maps
+                                      </a>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -698,6 +828,276 @@ const AdminDashboard = () => {
                                 >
                                   Mark Delivered
                                 </Button>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Food Orders Tab */}
+          <TabsContent value="food-orders" className="space-y-4">
+            <Card className="border border-gray-700 bg-gray-800 shadow-lg">
+              <CardHeader className="bg-gradient-to-r from-gray-800 to-gray-900">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle className="text-2xl font-bold text-white">🍕 Food Delivery Orders</CardTitle>
+                    <CardDescription className="text-gray-300">
+                      Manage food delivery orders - Recent orders appear first
+                    </CardDescription>
+                  </div>
+                  <Button onClick={refetchFoodOrders} variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-700">
+                    Refresh
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                {foodOrdersLoading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500 mx-auto"></div>
+                    <p className="text-gray-400 mt-4">Loading food orders...</p>
+                  </div>
+                ) : foodOrdersError ? (
+                  <div className="text-center py-8">
+                    <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                    <p className="text-red-400">{foodOrdersError}</p>
+                    <Button onClick={refetchFoodOrders} className="mt-4" variant="outline">
+                      Try Again
+                    </Button>
+                  </div>
+                ) : foodOrders.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Package className="h-12 w-12 text-gray-500 mx-auto mb-4" />
+                    <p className="text-gray-400">No food delivery orders found</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {foodOrders.map((order) => (
+                      <Card key={order.id} className="border border-gray-600 bg-gray-700">
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-start mb-4">
+                            <div>
+                              <h3 className="text-lg font-semibold text-white">
+                                Food Order #{order.id.slice(-8)}
+                              </h3>
+                              <p className="text-sm text-gray-400">
+                                {new Date(order.created_at).toLocaleDateString('en-US', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
+                              <Badge variant="outline" className="mt-1 text-orange-400 border-orange-500">
+                                🍕 Food Delivery
+                              </Badge>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xl font-bold text-white">₹{order.total.toFixed(2)}</p>
+                              <Badge className={`${
+                                order.status === 'pending' ? 'bg-yellow-900 text-yellow-300' :
+                                order.status === 'confirmed' ? 'bg-blue-900 text-blue-300' :
+                                order.status === 'preparing' ? 'bg-orange-900 text-orange-300' :
+                                order.status === 'out_for_delivery' ? 'bg-purple-900 text-purple-300' :
+                                order.status === 'delivered' ? 'bg-green-900 text-green-300' :
+                                'bg-red-900 text-red-300'
+                              }`}>
+                                {order.status.toUpperCase()}
+                              </Badge>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            {/* Customer Information */}
+                            <div>
+                              <h4 className="font-medium text-gray-300 mb-2">Customer Information</h4>
+                              <div className="space-y-1">
+                                <p className="text-sm text-gray-400">
+                                  <span className="font-medium">Name:</span> {order.customer_name || 'Guest User'}
+                                </p>
+                                <p className="text-sm text-gray-400">
+                                  <span className="font-medium">Email:</span> {order.customer_email || 'Not provided'}
+                                </p>
+                                <p className="text-sm text-gray-400">
+                                  <span className="font-medium">Phone:</span> {order.customer_phone || 'Not provided'}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Delivery Information */}
+                            <div>
+                              <h4 className="font-medium text-gray-300 mb-2">Delivery Information</h4>
+                              <div className="space-y-1">
+                                <p className="text-sm text-gray-400">
+                                  <span className="font-medium">Address:</span> {order.delivery_address?.address || 'Not provided'}
+                                </p>
+                                <p className="text-sm text-gray-400">
+                                  <span className="font-medium">City:</span> {order.delivery_address?.city || 'Not provided'}
+                                </p>
+                                <p className="text-sm text-gray-400">
+                                  <span className="font-medium">Payment:</span> {order.payment_method?.toUpperCase() || 'COD'}
+                                </p>
+                                {order.restaurant_name && (
+                                  <p className="text-sm text-gray-400">
+                                    <span className="font-medium">Restaurant:</span> {order.restaurant_name}
+                                  </p>
+                                )}
+                                
+                                {/* Customer GPS Location for Food Orders */}
+                                {order.customer_location && (
+                                  <div className="mt-3 p-2 bg-gradient-to-r from-blue-900/40 to-purple-900/40 rounded-lg border border-blue-700">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <MapPin className="h-4 w-4 text-blue-400" />
+                                      <span className="font-medium text-blue-300 text-xs">Customer GPS Location</span>
+                                      <Badge className={`ml-auto ${
+                                        order.customer_location.isWithinRange
+                                          ? 'bg-green-900 text-green-300'
+                                          : 'bg-red-900 text-red-300'
+                                      }`}>
+                                        {order.customer_location.distance.toFixed(2)}km away
+                                        {order.customer_location.isWithinRange ? ' (Telangana)' : ' (Outside)'}
+                                      </Badge>
+                                    </div>
+                                    <div className="space-y-1">
+                                      <p className="text-xs text-gray-400">
+                                        <span className="font-medium">Latitude:</span> {order.customer_location.latitude.toFixed(6)}°
+                                      </p>
+                                      <p className="text-xs text-gray-400">
+                                        <span className="font-medium">Longitude:</span> {order.customer_location.longitude.toFixed(6)}°
+                                      </p>
+                                      <p className="text-xs text-gray-400">
+                                        <span className="font-medium">Accuracy:</span> ±{Math.round(order.customer_location.accuracy)}m
+                                      </p>
+                                      <a
+                                        href={`https://www.google.com/maps?q=${order.customer_location.latitude},${order.customer_location.longitude}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 underline mt-1"
+                                      >
+                                        <MapPin className="h-3 w-3" />
+                                        View on Google Maps
+                                      </a>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Food Items */}
+                          <div className="mb-4">
+                            <h4 className="font-medium text-gray-300 mb-2">Food Items ({order.items?.length || 0})</h4>
+                            <div className="space-y-1">
+                              {order.items?.slice(0, 3).map((item: any, index: number) => (
+                                <div key={index} className="flex justify-between items-center text-sm">
+                                  <span className="text-gray-400">
+                                    {item.product?.name || item.name} × {item.quantity}
+                                  </span>
+                                  <span className="text-gray-300 font-medium">
+                                    ₹{((item.product?.price || item.price) * item.quantity).toFixed(2)}
+                                  </span>
+                                </div>
+                              ))}
+                              {order.items?.length > 3 && (
+                                <p className="text-sm text-gray-500">
+                                  +{order.items.length - 3} more items
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="flex justify-between items-center pt-4 border-t border-gray-600">
+                            <div className="flex items-center space-x-4">
+                              <div className="text-sm text-gray-300">
+                                Payment: {(order.payment_method || 'COD').toUpperCase()}
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border-red-500 text-red-400 hover:bg-red-900/20"
+                                onClick={() => setDeleteOrderId(order.id)}
+                              >
+                                <Trash2 className="h-3 w-3 mr-1" />
+                                Delete
+                              </Button>
+                            </div>
+                            <div className="flex space-x-2">
+                              {/* Quick Contact Actions */}
+                              {order.customer_phone && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-green-500 text-green-400 hover:bg-green-900/20"
+                                  onClick={() => {
+                                    window.open(`tel:${order.customer_phone}`, '_self');
+                                  }}
+                                >
+                                  <Phone className="h-3 w-3 mr-1" />
+                                  Call
+                                </Button>
+                              )}
+                              {order.customer_email && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-blue-500 text-blue-400 hover:bg-blue-900/20"
+                                  onClick={() => {
+                                    window.open(`mailto:${order.customer_email}`, '_self');
+                                  }}
+                                >
+                                  <Mail className="h-3 w-3 mr-1" />
+                                  Email
+                                </Button>
+                              )}
+                              {order.user_id === null ? (
+                                <span className="text-xs text-orange-400 bg-orange-900 px-2 py-1 rounded">
+                                  Guest Order
+                                </span>
+                              ) : (
+                                <>
+                                  {order.status === 'pending' && (
+                                    <Button
+                                      size="sm"
+                                      onClick={() => updateFoodOrderStatus(order.id, 'confirmed')}
+                                      className="bg-green-600 hover:bg-green-700"
+                                    >
+                                      Confirm
+                                    </Button>
+                                  )}
+                                  {order.status === 'confirmed' && (
+                                    <Button
+                                      size="sm"
+                                      onClick={() => updateFoodOrderStatus(order.id, 'preparing')}
+                                      className="bg-orange-600 hover:bg-orange-700"
+                                    >
+                                      Start Preparing
+                                    </Button>
+                                  )}
+                                  {order.status === 'preparing' && (
+                                    <Button
+                                      size="sm"
+                                      onClick={() => updateFoodOrderStatus(order.id, 'out_for_delivery')}
+                                      className="bg-purple-600 hover:bg-purple-700"
+                                    >
+                                      Out for Delivery
+                                    </Button>
+                                  )}
+                                  {order.status === 'out_for_delivery' && (
+                                    <Button
+                                      size="sm"
+                                      onClick={() => updateFoodOrderStatus(order.id, 'delivered')}
+                                      className="bg-green-600 hover:bg-green-700"
+                                    >
+                                      Mark Delivered
+                                    </Button>
                                   )}
                                 </>
                               )}
