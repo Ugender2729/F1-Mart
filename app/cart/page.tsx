@@ -2,16 +2,16 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { ArrowLeft, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import CartItem from '@/components/cart/CartItem';
 import CartSummary from '@/components/cart/CartSummary';
 import { useCart } from '@/context/CartContext';
+import { useNavigate } from '@/hooks/useNavigate';
 
 const CartPage = () => {
   const { state: cartState } = useCart();
-  const router = useRouter();
+  const { navigate } = useNavigate();
 
   if (cartState.items.length === 0) {
     return (
@@ -55,7 +55,7 @@ const CartPage = () => {
           
           {/* Quick Checkout Button */}
           <Button 
-            onClick={() => router.push('/checkout')}
+            onClick={() => navigate('/checkout')}
             className="w-full md:w-auto bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-semibold px-6 py-3 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
           >
             <ShoppingCart className="h-5 w-5 mr-2" />

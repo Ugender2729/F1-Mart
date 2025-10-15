@@ -35,12 +35,12 @@ const CategoryGrid = () => {
         </div>
 
         {/* Premium category grid - optimized for 18 cards (3 rows of 6) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-6 gap-6 mb-16 max-w-7xl mx-auto">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-6 gap-3 sm:gap-4 md:gap-6 mb-16 max-w-7xl mx-auto">
           {categories.map((category, index) => (
             <Link
               key={category.id}
               href={`/products?category=${category.slug}`}
-              className="group relative overflow-hidden rounded-3xl card-premium"
+              className="group relative overflow-hidden rounded-2xl sm:rounded-3xl card-premium"
               style={{ animationDelay: `${index * 100}ms` }}
             >
               <div className="aspect-[4/5] overflow-hidden relative">
@@ -53,29 +53,29 @@ const CategoryGrid = () => {
                 {/* Premium overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent group-hover:from-black/90 transition-all duration-700" />
                 
-                {/* Floating elements */}
-                <div className="absolute top-6 left-6">
-                  <div className="glass px-4 py-2 rounded-full">
-                    <span className="text-white text-sm font-bold">
-                      {category.productCount} items
+                {/* Floating elements - Compact on mobile */}
+                <div className="absolute top-2 left-2 sm:top-6 sm:left-6">
+                  <div className="glass px-2 py-1 sm:px-4 sm:py-2 rounded-full">
+                    <span className="text-white text-[10px] sm:text-sm font-bold">
+                      {category.productCount}
                     </span>
                   </div>
                 </div>
                 
-                {/* Premium badge */}
-                <div className="absolute top-6 right-6">
-                  <div className="w-3 h-3 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full pulse-glow"></div>
+                {/* Premium badge - Compact on mobile */}
+                <div className="absolute top-2 right-2 sm:top-6 sm:right-6">
+                  <div className="w-2 h-2 sm:w-3 sm:h-3 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full pulse-glow"></div>
                 </div>
               </div>
               
-              {/* Content overlay */}
-              <div className="absolute bottom-0 left-0 right-0 p-8">
-                <h3 className="text-white font-bold text-2xl mb-3 group-hover:text-purple-300 transition-colors duration-500">
+              {/* Content overlay - Compact on mobile */}
+              <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-4 md:p-6 lg:p-8">
+                <h3 className="text-white font-bold text-xs sm:text-sm md:text-lg lg:text-2xl mb-1 sm:mb-2 md:mb-3 group-hover:text-purple-300 transition-colors duration-500">
                   {category.name}
                 </h3>
-                <div className="flex items-center text-white/80 text-sm opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-4 group-hover:translate-y-0">
-                  <span className="mr-3 font-medium">Explore Collection</span>
-                  <ArrowRight className="h-5 w-5 transform group-hover:translate-x-2 transition-transform duration-300" />
+                <div className="hidden sm:flex items-center text-white/80 text-xs sm:text-sm opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-4 group-hover:translate-y-0">
+                  <span className="mr-2 sm:mr-3 font-medium">Explore Collection</span>
+                  <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 transform group-hover:translate-x-2 transition-transform duration-300" />
                 </div>
               </div>
               
@@ -83,7 +83,7 @@ const CategoryGrid = () => {
               <div className="absolute inset-0 shimmer opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               
               {/* Glow effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-blue-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-blue-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl sm:rounded-3xl"></div>
             </Link>
           ))}
         </div>

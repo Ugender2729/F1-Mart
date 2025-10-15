@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { MessageCircle, X } from 'lucide-react';
 
 const WhatsAppButton = () => {
   const [isHovered, setIsHovered] = useState(false);
+  const pathname = usePathname();
   
   // Indian mobile number for WhatsApp (replace with your actual number)
   const phoneNumber = '919876543210'; // Format: 91 (country code) + 10 digit number
@@ -12,6 +14,17 @@ const WhatsAppButton = () => {
   
   // WhatsApp link
   const whatsappLink = `https://wa.me/${phoneNumber}?text=${message}`;
+
+  // Pages where WhatsApp button should be hidden
+  const hiddenPages = ['/cart', '/checkout', '/auth', '/profile'];
+  
+  // Check if current page is in the hidden list
+  const shouldHide = hiddenPages.some(page => pathname?.startsWith(page));
+  
+  // Don't render the button on hidden pages
+  if (shouldHide) {
+    return null;
+  }
 
   return (
     <>

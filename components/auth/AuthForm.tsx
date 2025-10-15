@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Eye, EyeOff, Loader2, Phone } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { useNavigate } from '@/hooks/useNavigate';
 import { toast } from 'sonner';
 
 interface AuthFormProps {
@@ -24,7 +24,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  const router = useRouter();
+  const { navigate } = useNavigate();
   const { signIn } = useAuth();
   const emailAuthEnabled = useMemo(() => process.env.NEXT_PUBLIC_ENABLE_EMAIL_AUTH === 'true', []);
 
@@ -67,8 +67,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
         toast.success('Admin access granted!', {
           description: 'Welcome to the admin dashboard.'
         });
-        router.push('/admin');
-        setLoading(false);
+        navigate('/admin');
+        // Keep loading state true until navigation completes
         return;
       }
       
@@ -125,7 +125,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
         toast.success('Welcome back!', {
           description: 'You have been successfully signed in.'
         });
-        router.push('/');
+        navigate('/');
+        // Keep loading state true until navigation completes
+        return;
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
@@ -133,9 +135,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
       toast.error('Error', {
         description: errorMessage
       });
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   return (

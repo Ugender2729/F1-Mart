@@ -31,6 +31,10 @@ const ErrorBoundary = dynamic(() => import('@/components/ErrorBoundary'), {
   ssr: false
 });
 
+const NavigationLoader = dynamic(() => import('@/components/NavigationLoader'), {
+  ssr: false
+});
+
 export const metadata: Metadata = {
   title: 'F1 Mart - Fresh and Fast Delivery',
   description: 'Get farm-fresh groceries delivered to your doorstep. Quality ingredients, competitive prices, fresh and fast delivery.',
@@ -90,6 +94,7 @@ export default function RootLayout({
             <Toaster />
             {/* <PerformanceMonitor /> */}
             <WhatsAppButton />
+            <NavigationLoader />
           </AppProviders>
         </ErrorBoundary>
       </body>

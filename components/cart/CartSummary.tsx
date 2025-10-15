@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useOrders, Order } from '@/hooks/useOrders';
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from '@/hooks/useNavigate';
 import Link from 'next/link';
 import { Package, Clock, CheckCircle, Truck, ShoppingCart } from 'lucide-react';
 
@@ -15,7 +15,7 @@ const CartSummary: React.FC<CartSummaryProps> = ({ subtotal }) => {
   const { user } = useAuth();
   const { orders, loading: ordersLoading, fetchOrders } = useOrders();
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
-  const router = useRouter();
+  const { navigate } = useNavigate();
 
   // Fetch recent orders when component mounts
   useEffect(() => {
@@ -85,7 +85,7 @@ const CartSummary: React.FC<CartSummaryProps> = ({ subtotal }) => {
     if (subtotal === 0) {
       return; // Don't allow checkout with empty cart
     }
-    router.push('/checkout');
+    navigate('/checkout');
   };
 
   return (
